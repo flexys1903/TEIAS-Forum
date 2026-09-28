@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Paneli - KaraKartal Chat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-[#2C2D30] text-[#F4F1EA] h-screen flex flex-col">
+
+  <!-- Üst Bar -->
+  <div class="h-16 bg-[#1E1F22] border-b border-[#383A3F] flex items-center justify-between px-8">
+    <h1 class="text-xl font-bold text-[#D7CCC8]">🛡️ Admin Kontrol Paneli</h1>
+    <a href="chat.html" class="text-sm text-[#949BA4] hover:text-[#F4F1EA] transition">Sohbete Dön</a>
+  </div>
+
+  <!-- İçerik -->
+  <div class="flex-1 p-8 overflow-y-auto">
+    <h2 class="text-lg font-semibold mb-4 text-[#D7CCC8]">Aktif Bağlı Cihazlar ve IP Listesi</h2>
+    
+    <div class="bg-[#1E1F22] rounded-lg border border-[#383A3F] overflow-hidden">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b border-[#383A3F] text-[#949BA4] text-sm">
+            <th class="p-4">Kullanıcı</th>
+            <th class="p-4">IP Adresi</th>
+            <th class="p-4">Cihaz Parmak İzi (ID)</th>
+            <th class="p-4">İşlemler</th>
+          </tr>
+        </thead>
+        <tbody id="userListTable">
+          <!-- Dinamik olarak dolacak -->
+          <tr class="border-b border-[#383A3F]/50 hover:bg-[#2C2D30] transition">
+            <td class="p-4 font-medium">Utku</td>
+            <td class="p-4 text-[#D7CCC8]">192.168.1.34</td>
+            <td class="p-4 text-xs text-[#949BA4]">dev_fingerprint_8f9a2</td>
+            <td class="p-4 space-x-2">
+              <button onclick="banUser('192.168.1.34')" class="bg-red-500/20 text-red-400 px-3 py-1 rounded text-xs hover:bg-red-500/30 transition">IP Ban At</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    function banUser(ip) {
+      if(confirm(`${ip} adresli kullanıcıyı banlamak istediğine emin misin kanka?`)) {
+        alert(`${ip} başarıyla banlandı!`);
+        // Supabase bans tablosuna eklenecek kod buraya gelecek
+      }
+    }
+  </script>
+</body>
+</html>
