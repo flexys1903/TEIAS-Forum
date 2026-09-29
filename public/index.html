@@ -38,8 +38,9 @@
         
         .btn-primary { width: 100%; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; border: none; padding: 14px; border-radius: 12px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 5px; }
         
-        .auth-switch { text-align: center; margin-top: 20px; padding: 12px; color: var(--text-muted); font-size: 0.9rem; cursor: pointer; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); }
-        .auth-switch:active { background: rgba(59, 130, 246, 0.15); color: #fff; }
+        /* Kesin tıklanabilir Buton Switch */
+        .auth-switch-btn { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: var(--text-muted); padding: 12px; border-radius: 10px; font-size: 0.9rem; font-weight: 500; cursor: pointer; margin-top: 20px; text-align: center; display: block; }
+        .auth-switch-btn:active { background: rgba(59, 130, 246, 0.2); color: #fff; border-color: var(--accent); }
 
         /* --- APP CORE --- */
         .app-wrapper { display: flex; width: 100vw; height: 100vh; opacity: 0; transition: opacity 0.4s ease; }
@@ -102,7 +103,7 @@
         <div class="auth-container" id="login-screen">
             <div class="auth-header">
                 <h1>Giriş Yap</h1>
-                <p>TEİAŞ Quantum Ağına Bağlan</p>
+                <p>TEİAŞ Quantum Ağına Bağlan (v4)</p>
             </div>
             <div class="input-group">
                 <input type="text" id="login-username" placeholder="Hesap İsmi (Kullanıcı Adı)" autocapitalize="none">
@@ -112,16 +113,16 @@
             </div>
             <button class="btn-primary" onclick="handleLogin()">Giriş Yap</button>
             
-            <div class="auth-switch" onclick="switchToSignup()" ontouchend="switchToSignup(); event.preventDefault();">
+            <button type="button" class="auth-switch-btn" onclick="switchToSignup()">
                 Hesabın yok mu? Kayıt ol ⚡
-            </div>
+            </button>
         </div>
 
         <!-- 2. KAYIT OL EKRANI -->
         <div class="auth-container" id="signup-screen" style="display: none;">
             <div class="auth-header">
                 <h1>Hesap Oluştur</h1>
-                <p>Yeni bir hesap ismi ve şifre belirle</p>
+                <p>Yeni bir hesap ismi ve şifre belirle (v4)</p>
             </div>
             <div class="input-group">
                 <input type="text" id="signup-username" placeholder="Hesap İsmi (Kullanıcı Adı)" autocapitalize="none">
@@ -131,9 +132,9 @@
             </div>
             <button class="btn-primary" onclick="handleSignup()">Kayıt Ol ve Başla</button>
             
-            <div class="auth-switch" onclick="switchToLogin()" ontouchend="switchToLogin(); event.preventDefault();">
+            <button type="button" class="auth-switch-btn" onclick="switchToLogin()">
                 Zaten hesabın var mı? Giriş yap ⚡
-            </div>
+            </button>
         </div>
     </div>
 
@@ -208,6 +209,7 @@
         }
 
         function switchToSignup() {
+            console.switchToSignup ? null : console.log("Switching to signup");
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('signup-screen').style.display = 'block';
         }
