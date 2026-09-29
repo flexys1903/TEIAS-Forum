@@ -26,7 +26,9 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--bg-deep); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
+        
+        /* 100dvh ile mobil tarayıcı adres çubuğu sorunu çözüldü */
+        body { background-color: var(--bg-deep); color: var(--text-main); height: 100dvh; display: flex; overflow: hidden; }
 
         /* Auth Modal */
         #auth-modal { position: fixed; inset: 0; background: var(--bg-deep); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
@@ -68,11 +70,11 @@
         .btn-success { background: rgba(101, 163, 13, 0.15); color: var(--success); border: 1px solid rgba(101, 163, 13, 0.3); }
 
         /* Ana Uygulama Yapısı */
-        .app-wrapper { display: flex; width: 100vw; height: 100vh; opacity: 0; transition: opacity 0.4s ease; position: relative; }
+        .app-wrapper { display: flex; width: 100vw; height: 100%; opacity: 0; transition: opacity 0.4s ease; position: relative; }
         .app-wrapper.visible { opacity: 1; }
 
         /* Sidebar */
-        .sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 100; transition: transform 0.3s ease; }
+        .sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 100; transition: transform 0.3s ease; flex-shrink: 0; }
         .brand-box { padding: 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); }
         .brand-logo { width: 38px; height: 38px; background: var(--gray-subtle); border: 1px solid var(--border); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
         .brand-logo img { width: 100%; height: 100%; object-fit: cover; }
@@ -99,16 +101,16 @@
         .logout-btn { background: rgba(217, 119, 6, 0.1); border: 1px solid rgba(217, 119, 6, 0.2); color: var(--beige-primary); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
         /* Workspace & Chat */
-        .workspace { flex: 1; display: flex; flex-direction: column; background: var(--bg-deep); position: relative; min-width: 0; }
-        .workspace-header { padding: 16px 20px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+        .workspace { flex: 1; display: flex; flex-direction: column; background: var(--bg-deep); position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+        .workspace-header { padding: 16px 20px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
         
-        /* Mobil Menü Butonu (Mobilde Görünür) */
         .mobile-menu-toggle { display: none; background: rgba(212, 181, 157, 0.1); border: 1px solid var(--border); color: var(--beige-primary); width: 38px; height: 38px; border-radius: 10px; font-size: 1.1rem; cursor: pointer; align-items: center; justify-content: center; flex-shrink: 0; }
         
         .workspace-title h3 { font-size: 1rem; font-weight: 600; color: var(--beige-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .workspace-title p { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        #chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        /* min-height: 0 ile input alanının dışarı itilmesi engellendi */
+        #chat-messages { flex: 1; min-height: 0; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
         
         .message-card { display: flex; gap: 12px; max-width: 85%; }
         .message-card.self { align-self: flex-end; flex-direction: row-reverse; }
@@ -124,7 +126,7 @@
         .msg-bubble img { max-width: 260px; max-height: 200px; border-radius: 8px; margin-top: 8px; display: block; cursor: pointer; }
 
         /* Input Dock */
-        .input-dock { padding: 16px 20px; background: var(--surface); border-top: 1px solid var(--border); }
+        .input-dock { padding: 16px 20px; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; }
         .input-box { display: flex; align-items: center; background: var(--gray-subtle); border: 1px solid var(--border); border-radius: 14px; padding: 6px 10px; gap: 10px; }
         .attach-btn { background: transparent; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex-shrink: 0; }
         .input-box input[type="text"] { flex: 1; background: transparent; border: none; color: var(--beige-light); outline: none; font-size: 0.95rem; padding: 6px; min-width: 0; }
@@ -137,7 +139,7 @@
 
         @media (max-width: 768px) {
             .mobile-menu-toggle { display: flex; }
-            .sidebar { position: fixed; top: 0; left: -280px; height: 100vh; z-index: 100; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
+            .sidebar { position: fixed; top: 0; left: -280px; height: 100dvh; z-index: 100; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
             .sidebar.mobile-open { transform: translateX(280px); }
             .sidebar-overlay.active { display: block; }
             .workspace-header { padding: 12px 15px; }
@@ -249,9 +251,8 @@
         var ADMIN_USERNAME = "utku"; 
         var currentAdminTab = 'messages';
         
-        var activeChatType = 'global'; // 'global' ya da hedef kullanıcının username'i (string)
+        var activeChatType = 'global';
 
-        // Mobil Sidebar Aç/Kapat Fonksiyonları
         function toggleMobileSidebar() {
             var sidebar = document.getElementById('appSidebar');
             var overlay = document.getElementById('sidebarOverlay');
@@ -286,7 +287,7 @@
                 }
             } catch (err) {
                 alert("Kritik Bağlantı Hatası: " + err.message);
-      }
+            }
         }
 
         function renderAuthCard() {
@@ -684,7 +685,6 @@
             chatBox.appendChild(card);
         }
 
-        // --- ADMIN PANEL FONKSİYONLARI ---
         function openAdminPanel() {
             if (currentUsername.toLowerCase() !== ADMIN_USERNAME.toLowerCase()) return;
             document.getElementById('adminModal').style.display = 'flex';
@@ -733,6 +733,48 @@
                 
                 html += '<div class="admin-item" data-id="' + msg.id + '">';
                 html += '<div class="admin-item-info">';
+                html += '<div class="admin-item-title">' + author + '</div>';
+                html += '<div class="admin-item-sub">' + escapeHtml(snippet) + '</div>';
+                html += '</div>';
+                html += '<div class="admin-actions">';
+                html += '<button class="btn-action btn-danger" onclick="adminDeleteMessage(\'' + msg.id + '\', ' + isDMTable + ')">🗑️ Sil</button>';
+                html += '</div></div>';
+            });
+            body.innerHTML = html;
+        }
+
+        async function adminDeleteMessage(id, isDM) {
+            if (!confirm("Bu mesajı silmek istediğine emin misin kanka?")) return;
+            var table = isDM ? 'direct_messages' : 'messages';
+            var res = await supabase.from(table).delete().eq('id', id);
+            
+            if (res.error) {
+                alert("Silme hatası: " + res.error.message);
+            } else {
+                var item = document.querySelector('.admin-item[data-id="' + id + '"]');
+                if (item) item.remove();
+                var chatEl = document.querySelector('[data-msg-id="' + id + '"]');
+                if (chatEl) chatEl.remove();
+            }
+        }
+
+        async function loadAdminUsers() {
+            var body = document.getElementById('adminTabBody');
+            body.innerHTML = '<div style="color:var(--text-muted); text-align:center;">Kullanıcılar yükleniyor...</div>';
+            
+            var res = await supabase.from('profiles').select('*');
+            if (res.error) {
+                body.innerHTML = '<div style="color:var(--danger-btn);">Kullanıcılar yüklenemedi.</div>';
+                return;
+            }
+
+            var html = '';
+            res.data.forEach(function(user) {
+                var isBanned = user.banned_until && new Date(user.banned_until) > new Date();
+                var statusText = isBanned ? '<span style="color:var(--danger-btn);">[BANLI]</span>' : '<span style="color:var(--success);">[Aktif]</span>';
+                
+                html += '<div class="admin-item">';
+                html += '<div class="admin-item-info">';
                 html += '<div class="admin-item-title">' + user.username + ' ' + statusText + '</div>';
                 html += '<div class="admin-item-sub">' + user.email + '</div>';
                 html += '</div>';
@@ -745,7 +787,6 @@
                 }
                 html += '</div></div>';
             });
-            body.html = html;
             body.innerHTML = html;
         }
 
