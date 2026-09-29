@@ -1,23 +1,17 @@
-import os
-from flask import Flask, send_from_directory, jsonify
+const express = require('express');
+const path = require('path');
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-app = Flask(__name__, static_folder='public')
+app.use(express.static(path.join(__dirname, 'public')));
 
-@app.route('/')
-def index():
-    return send_from_directory('public', 'index.html')
+app.get('/api/config', (req, res) => {
+    res.json({
+        SUPABASE_URL: process.env.SUPABASE_URL,
+        SUPABASE_KEY: process.env.SUPABASE_KEY
+    });
+});
 
-@app.route('/api/config')
-def get_config():
-    return jsonify({
-        "SUPABASE_URL": os.environ.get("SUPABASE_URL", ""),
-        "SUPABASE_KEY": os.environ.get("SUPABASE_SECRET_KEY", "")
-    })
-
-@app.route('/<path:path>')
-def serve_static(path):
-    return send_from_directory('public', path)
-
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+app.listen(PORT, () => {
+    console.log(`TEİAŞ Sunucusu ${PORT} portunda çalışıyor.`);
+});
