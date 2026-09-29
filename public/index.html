@@ -53,7 +53,7 @@
         
         .nav-section { padding: 20px 15px; flex: 1; overflow-y: auto; }
         .nav-label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 1px; margin-bottom: 12px; padding-left: 10px; }
-        .nav-item { padding: 12px 16px; border-radius: 10px; color: var(--text-muted); font-size: 0.92nr; font-weight: 500; cursor: pointer; transition: all 0.25s; display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+        .nav-item { padding: 12px 16px; border-radius: 10px; color: var(--text-muted); font-size: 0.92rem; font-weight: 500; cursor: pointer; transition: all 0.25s; display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
         .nav-item.active { background: linear-gradient(90deg, rgba(59, 130, 246, 0.15), transparent); color: #fff; border-left: 3px solid var(--accent); }
 
         .admin-panel-btn { margin: 15px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--admin-gold); padding: 10px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: none; text-align: center; transition: all 0.2s; }
@@ -93,12 +93,12 @@
 
         @keyframes messageAppear { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
     </style>
 </head>
 <body>
 
-    <!-- AUTH MODAL (Kullanıcı Adı ile Giriş) -->
+    <!-- AUTH MODAL -->
     <div id="auth-modal">
         <div class="auth-container">
             <div class="auth-header">
@@ -131,7 +131,6 @@
                 <div class="nav-item active"># quantum-genel</div>
             </div>
             
-            <!-- ADMIN PANEL BUTONU (Sadece Adminlere Görünür) -->
             <div id="adminBtn" class="admin-panel-btn" onclick="openAdminPanel()">⚙️ Admin Paneli</div>
 
             <div class="user-footer">
@@ -172,17 +171,20 @@
         let currentUser = null;
         let isSignUp = false;
 
-        // Kendi kullanıcı adını buraya yazarak admin yetkisi verebilirsin!
         const ADMIN_USERNAME = "utku"; 
 
         async function init() {
-            const res = await fetch('/api/config');
-            const config = await res.json();
-            supabase = window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_KEY);
+            try {
+                const res = await fetch('/api/config');
+                const config = await res.json();
+                supabase = window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_KEY);
 
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                setSessionUser(session.user);
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    setSessionUser(session.user);
+                }
+            } catch (err) {
+                console.error("Init error:", err);
             }
         }
 
@@ -191,12 +193,10 @@
             document.getElementById('auth-modal').style.display = 'none';
             document.getElementById('appWrapper').classList.add('visible');
             
-            // Gizli e-postadan hesap ismini geri alıyoruz (ornek@teias.local -> ornek)
             const username = currentUser.email.split('@')[0];
             document.getElementById('userDisplayName').textContent = username;
             document.getElementById('userAvatarSymbol').textContent = username.charAt(0).toUpperCase();
             
-            // Admin kontrolü
             if (username.toLowerCase() === ADMIN_USERNAME.toLowerCase()) {
                 document.getElementById('adminBtn').style.display = 'block';
             }
@@ -207,22 +207,31 @@
 
         function toggleAuthMode() {
             isSignUp = !isSignUp;
-            document.getElementById('auth-title').textContent = isSignUp ? "Hesap Oluştur" : "Giriş Yap";
-            document.getElementById('auth-subtitle').textContent = isSignUp ? "Yeni bir hesap ismi ve şifre belirle" : "TEİAŞ Quantum Ağına Bağlan";
-            document.getElementById('auth-btn').textContent = isSignUp ? "Kayıt Ol ve Başla" : "Giriş Yap";
-            document.getElementById('auth-switch-text').textContent = isSignUp ? "Zaten hesabın var mı? Giriş yap" : "Hesabın yok mu? Kayıt ol";
+            const titleEl = document.getElementById('auth-title');
+            const subtitleEl = document.getElementById('auth-subtitle');
+            const btnEl = document.getElementById('auth-btn');
+            const switchEl = document.getElementById('auth-switch-text');
+
+            if (titleEl) titleEl.textContent = isSignUp ? "Hesap Oluştur" : "Giriş Yap";
+            if (subtitleEl) subtitleEl.textContent = isSignUp ? "Yeni bir hesap ismi ve şifre belirle" : "TEİAŞ Quantum Ağına Bağlan";
+            if (btnEl) btnEl.textContent = isSignUp ? "Kayıt Ol ve Başla" : "Giriş Yap";
+            if (switchEl) switchEl.textContent = isSignUp ? "Zaten hesabın var mı? Giriş yap" : "Hesabın yok mu? Kayıt ol";
         }
 
         async function handleAuth() {
-            const username = document.getElementById('auth-username').value.trim().toLowerCase();
-            const password = document.getElementById('auth-password').value.trim();
+            const usernameField = document.getElementById('auth-username');
+            const passwordField = document.getElementById('auth-password');
+            
+            if (!usernameField || !passwordField) return;
+
+            const username = usernameField.value.trim().toLowerCase();
+            const password = passwordField.value.trim();
 
             if(!username || !password) {
                 alert("Hesap ismini ve şifreni eksiksiz gir kanka!");
                 return;
             }
 
-            // Supabase e-posta formatı zorunlu tuttuğu için kullanıcı adını arka planda e-postaya çeviriyoruz
             const fakeEmail = `${username}@teias.local`;
 
             if (isSignUp) {
