@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TEİAŞ Arıza Servisi // Admin Paneli</title>
-    <!-- Tarayıcı Sekme Simge (Favicon) -->
     <link rel="icon" type="image/jpeg" href="https://www.belsiscad.com.tr/images/haber/f5ed8a68165c4f158103f7290bd0fdf0.jpg">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -81,9 +80,10 @@
         .brand-info h2 { font-size: 0.9rem; font-weight: 700; color: var(--beige-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .brand-info span { font-size: 0.7rem; color: var(--beige-primary); font-family: 'JetBrains Mono', monospace; }
         
-        .nav-section { padding: 15px; flex: 1; overflow-y: auto; }
-        .nav-label { font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 1px; margin-bottom: 10px; padding-left: 8px; }
-        .nav-item { padding: 10px 14px; border-radius: 8px; color: var(--text-muted); font-size: 0.9rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .nav-section { padding: 15px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+        .nav-label { font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 1px; margin: 10px 0 6px 8px; }
+        .nav-item { padding: 10px 14px; border-radius: 8px; color: var(--text-muted); font-size: 0.9rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.2s, color 0.2s; }
+        .nav-item:hover { background: rgba(255,255,255,0.02); color: var(--beige-light); }
         .nav-item.active { background: rgba(212, 181, 157, 0.12); color: var(--beige-light); border-left: 3px solid var(--beige-primary); }
 
         .admin-panel-btn { margin: 15px; background: rgba(212, 181, 157, 0.08); border: 1px solid rgba(212, 181, 157, 0.2); color: var(--beige-primary); padding: 10px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: none; text-align: center; }
@@ -148,7 +148,7 @@
     <div id="adminModal">
         <div class="admin-modal-content">
             <div class="admin-modal-header">
-                <h2>⚙️️ TEİAŞ Arıza Servisi Admin Paneli</h2>
+                <h2>⚙ TEİAŞ Arıza Servisi Admin Paneli</h2>
                 <button class="close-admin" onclick="closeAdminPanel()">✕</button>
             </div>
             <div class="admin-tabs">
@@ -172,9 +172,15 @@
                     <span>Canlı Ağ</span>
                 </div>
             </div>
+            
             <div class="nav-section">
-                <div class="nav-label">Kanallar</div>
-                <div class="nav-item active"># arıza-tespit</div>
+                <div class="nav-label">Genel Kanal</div>
+                <div class="nav-item active" id="navGlobal" onclick="switchChat('global')"># arıza-tespit</div>
+
+                <div class="nav-label">Özel Mesajlar (DM)</div>
+                <div id="userListContainer">
+                    <div style="font-size:0.8rem; color:var(--text-muted); padding:6px 12px;">Kullanıcılar yükleniyor...</div>
+                </div>
             </div>
             
             <div id="adminBtn" class="admin-panel-btn" onclick="openAdminPanel()">⚙️ Admin Paneli</div>
@@ -195,8 +201,8 @@
         <div class="workspace">
             <div class="workspace-header">
                 <div class="workspace-title">
-                    <h3># arıza-tespit</h3>
-                    <p>Uçtan uca şifreli arıza bildirim kanalı</p>
+                    <h3 id="workspaceTitle"># arıza-tespit</h3>
+                    <p id="workspaceSub">Uçtan uca şifreli arıza bildirim kanalı</p>
                 </div>
             </div>
 
@@ -224,6 +230,8 @@
         var isLoginMode = true; 
         var ADMIN_USERNAME = "utku"; 
         var currentAdminTab = 'messages';
+        
+        var activeChatType = 'global'; // 'global' ya da hedef kullanıcının username'i (string)
 
         async function init() {
             try {
@@ -385,8 +393,48 @@
                 document.getElementById('adminBtn').style.display = 'block';
             }
 
+            loadUserList();
             loadMessages();
             subscribeRealtime();
+        }
+
+        async function loadUserList() {
+            var res = await supabase.from('profiles').select('username').neq('username', currentUsername);
+            var container = document.getElementById('userListContainer');
+            if (!container) return;
+
+            if (res.error || !res.data || res.data.length === 0) {
+                container.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted); padding:6px 12px;">Başka kullanıcı yok</div>';
+                return;
+            }
+
+            var html = '';
+            res.data.forEach(function(u) {
+                html += '<div class="nav-item" id="navUser_' + u.username + '" onclick="switchChat(\'' + u.username + '\')">👤 ' + u.username + '</div>';
+            });
+            container.innerHTML = html;
+        }
+
+        function switchChat(type) {
+            activeChatType = type;
+            
+            // Sidebar aktiflik sınıflarını güncelle
+            document.getElementById('navGlobal').className = 'nav-item ' + (type === 'global' ? 'active' : '');
+            
+            var userNavs = document.querySelectorAll('[id^="navUser_"]');
+            userNavs.forEach(function(el) { el.classList.remove('active'); });
+
+            if (type === 'global') {
+                document.getElementById('workspaceTitle').textContent = '# arıza-tespit';
+                document.getElementById('workspaceSub').textContent = 'Uçtan uca şifreli arıza bildirim kanalı';
+            } else {
+                document.getElementById('workspaceTitle').textContent = '@' + type;
+                document.getElementById('workspaceSub').textContent = type + ' ile 1\'e 1 özel mesajlaşma';
+                var selectedUserNav = document.getElementById('navUser_' + type);
+                if (selectedUserNav) selectedUserNav.classList.add('active');
+            }
+
+            loadMessages();
         }
 
         async function uploadProfileAvatar(inputElement) {
@@ -422,25 +470,44 @@
         }
 
         async function loadMessages() {
-            var res = await supabase.from('messages').select('*').order('created_at', { ascending: true });
-            if (res.error) return;
-            
             var chatBox = document.getElementById('chat-messages');
             chatBox.innerHTML = '';
-            if(res.data) {
-                res.data.forEach(function(msg) {
-                    appendMessage(msg);
-                });
+
+            if (activeChatType === 'global') {
+                var res = await supabase.from('messages').select('*').order('created_at', { ascending: true });
+                if (res.data) {
+                    res.data.forEach(function(msg) { appendMessage(msg); });
+                }
+            } else {
+                // Özel mesajları çek: (sender = me AND receiver = target) OR (sender = target AND receiver = me)
+                var res1 = await supabase.from('direct_messages').select('*')
+                    .eq('sender_username', currentUsername).eq('receiver_username', activeChatType);
+                
+                var res2 = await supabase.from('direct_messages').select('*')
+                    .eq('sender_username', activeChatType).eq('receiver_username', currentUsername);
+
+                var combined = [];
+                if (res1.data) combined = combined.concat(res1.data);
+                if (res2.data) combined = combined.concat(res2.data);
+
+                // Tarihe göre sırala
+                combined.sort(function(a, b) { return new Date(a.created_at) - new Date(b.created_at); });
+
+                combined.forEach(function(msg) { appendMessage(msg, true); });
             }
+
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         function subscribeRealtime() {
+            // 1. Global Mesajlar
             supabase.channel('public:messages')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, function(payload) {
-                    appendMessage(payload.new);
-                    var chatBox = document.getElementById('chat-messages');
-                    chatBox.scrollTop = chatBox.scrollHeight;
+                    if (activeChatType === 'global') {
+                        appendMessage(payload.new);
+                        var chatBox = document.getElementById('chat-messages');
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                    }
                 })
                 .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, function(payload) {
                     var el = document.querySelector('[data-msg-id="' + payload.old.id + '"]');
@@ -448,12 +515,31 @@
                 })
                 .subscribe();
 
+            // 2. Özel Mesajlar
+            supabase.channel('public:direct_messages')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, function(payload) {
+                    var m = payload.new;
+                    if (activeChatType !== 'global' && 
+                        ((m.sender_username === currentUsername && m.receiver_username === activeChatType) ||
+                         (m.sender_username === activeChatType && m.receiver_username === currentUsername))) {
+                        appendMessage(m, true);
+                        var chatBox = document.getElementById('chat-messages');
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                    }
+                })
+                .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'direct_messages' }, function(payload) {
+                    var el = document.querySelector('[data-msg-id="' + payload.old.id + '"]');
+                    if (el) el.remove();
+                })
+                .subscribe();
+
+            // 3. Polling Yedek
             setInterval(async function() {
-                var res = await supabase.from('messages').select('*').order('created_at', { ascending: true });
-                if (res.data) {
-                    var chatBox = document.getElementById('chat-messages');
-                    if (res.data.length !== chatBox.children.length) {
-                        loadMessages();
+                if (activeChatType === 'global') {
+                    var res = await supabase.from('messages').select('*').order('created_at', { ascending: true });
+                    if (res.data) {
+                        var chatBox = document.getElementById('chat-messages');
+                        if (res.data.length !== chatBox.children.length) loadMessages();
                     }
                 }
             }, 3000);
@@ -464,21 +550,42 @@
             var text = input.value.trim();
             if (!text && !mediaUrl) return;
 
-            var res = await supabase.from('messages').insert([{
-                user_email: currentUsername,
-                avatar_url: currentUserAvatar || null,
-                content: text,
-                image_url: mediaUrl || null
-            }]).select();
+            if (activeChatType === 'global') {
+                var res = await supabase.from('messages').insert([{
+                    user_email: currentUsername,
+                    avatar_url: currentUserAvatar || null,
+                    content: text,
+                    image_url: mediaUrl || null
+                }]).select();
 
-            if (res.error) {
-                alert("Mesaj gönderilemedi! Hata: " + res.error.message);
+                if (res.error) {
+                    alert("Mesaj gönderilemedi! Hata: " + res.error.message);
+                } else {
+                    input.value = '';
+                    if (res.data && res.data[0]) {
+                        appendMessage(res.data[0]);
+                        var chatBox = document.getElementById('chat-messages');
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                    }
+                }
             } else {
-                input.value = '';
-                if (res.data && res.data[0]) {
-                    appendMessage(res.data[0]);
-                    var chatBox = document.getElementById('chat-messages');
-                    chatBox.scrollTop = chatBox.scrollHeight;
+                var res = await supabase.from('direct_messages').insert([{
+                    sender_username: currentUsername,
+                    receiver_username: activeChatType,
+                    avatar_url: currentUserAvatar || null,
+                    content: text,
+                    image_url: mediaUrl || null
+                }]).select();
+
+                if (res.error) {
+                    alert("Özel mesaj gönderilemedi! Hata: " + res.error.message);
+                } else {
+                    input.value = '';
+                    if (res.data && res.data[0]) {
+                        appendMessage(res.data[0], true);
+                        var chatBox = document.getElementById('chat-messages');
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                    }
                 }
             }
         }
@@ -508,13 +615,14 @@
             inputElement.value = '';
         }
 
-        function appendMessage(msg) {
+        function appendMessage(msg, isDM) {
             if (!msg.id) return;
             var existing = document.querySelector('[data-msg-id="' + msg.id + '"]');
             if (existing) return;
 
             var chatBox = document.getElementById('chat-messages');
-            var isSelf = msg.user_email === currentUsername;
+            var sender = isDM ? msg.sender_username : msg.user_email;
+            var isSelf = sender === currentUsername;
             
             var card = document.createElement('div');
             card.className = 'message-card ' + (isSelf ? 'self' : '');
@@ -528,12 +636,12 @@
             if (msg.avatar_url) {
                 html += '<img src="' + msg.avatar_url + '" alt="PP">';
             } else {
-                html += msg.user_email.charAt(0).toUpperCase();
+                html += sender.charAt(0).toUpperCase();
             }
             html += '</div>';
 
             html += '<div class="msg-content-wrapper">';
-            html += '<div class="msg-meta"><span>' + msg.user_email + '</span><span>•</span><span>' + timeStr + '</span></div>';
+            html += '<div class="msg-meta"><span>' + sender + '</span><span>•</span><span>' + timeStr + '</span></div>';
             html += '<div class="msg-bubble">';
             
             if (msg.content) {
@@ -576,34 +684,42 @@
             body.innerHTML = '<div style="color:var(--text-muted); text-align:center;">Yükleniyor...</div>';
             
             var res = await supabase.from('messages').select('*').order('created_at', { ascending: false }).limit(50);
-            if (res.error) {
-                body.innerHTML = '<div style="color:var(--danger-btn);">Mesajlar yüklenemedi.</div>';
-                return;
-            }
+            var resDM = await supabase.from('direct_messages').select('*').order('created_at', { ascending: false }).limit(50);
+            
+            var allMsgs = [];
+            if (res.data) allMsgs = allMsgs.concat(res.data);
+            if (resDM.data) allMsgs = allMsgs.concat(resDM.data);
+            
+            allMsgs.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
 
-            if (!res.data || res.data.length === 0) {
+            if (allMsgs.length === 0) {
                 body.innerHTML = '<div style="color:var(--text-muted); text-align:center;">Hiç mesaj yok.</div>';
                 return;
             }
 
             var html = '';
-            res.data.forEach(function(msg) {
+            allMsgs.forEach(function(msg) {
+                var isDMTable = msg.sender_username !== undefined;
+                var author = isDMTable ? (msg.sender_username + ' ➔ ' + msg.receiver_username + ' (Özel)') : (msg.user_email + ' (Genel)');
                 var snippet = msg.content ? msg.content.substring(0, 40) : '[Medya]';
+                
                 html += '<div class="admin-item" data-id="' + msg.id + '">';
                 html += '<div class="admin-item-info">';
-                html += '<div class="admin-item-title">' + msg.user_email + '</div>';
+                html += '<div class="admin-item-title">' + author + '</div>';
                 html += '<div class="admin-item-sub">' + escapeHtml(snippet) + '</div>';
                 html += '</div>';
                 html += '<div class="admin-actions">';
-                html += '<button class="btn-action btn-danger" onclick="adminDeleteMessage(\'' + msg.id + '\')">🗑️ Sil</button>';
+                html += '<button class="btn-action btn-danger" onclick="adminDeleteMessage(\'' + msg.id + '\', ' + isDMTable + ')">🗑️ Sil</button>';
                 html += '</div></div>';
             });
             body.innerHTML = html;
         }
 
-        async function adminDeleteMessage(id) {
+        async function adminDeleteMessage(id, isDM) {
             if (!confirm("Bu mesajı silmek istediğine emin misin kanka?")) return;
-            var res = await supabase.from('messages').delete().eq('id', id);
+            var table = isDM ? 'direct_messages' : 'messages';
+            var res = await supabase.from(table).delete().eq('id', id);
+            
             if (res.error) {
                 alert("Silme hatası: " + res.error.message);
             } else {
