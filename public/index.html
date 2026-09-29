@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TEİAŞ Quantum Core // Beige & Gray Edition</title>
+    <title>TEİAŞ Quantum Core // Admin Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
@@ -19,6 +19,7 @@
             --text-muted: #a39b93;
             --gray-subtle: #2b2b33;
             --danger: #d97706;
+            --danger-btn: #ef4444;
             --success: #65a30d;
             --admin-gold: #d4b59d;
         }
@@ -44,6 +45,27 @@
         .auth-switch-btn { width: 100%; background: rgba(255,255,255,0.02); border: 1px solid var(--border); color: var(--text-muted); padding: 12px; border-radius: 10px; font-size: 0.9rem; font-weight: 500; cursor: pointer; margin-top: 20px; text-align: center; display: block; }
         .auth-switch-btn:active { background: rgba(212, 181, 157, 0.1); color: var(--beige-light); }
 
+        /* Admin Modal */
+        #adminModal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 3000; padding: 20px; }
+        .admin-modal-content { width: 100%; max-width: 650px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; display: flex; flex-direction: column; max-height: 85vh; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.9); }
+        .admin-modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); }
+        .admin-modal-header h2 { font-size: 1.1rem; color: var(--beige-light); font-weight: 700; }
+        .close-admin { background: transparent; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
+        .admin-tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--gray-subtle); }
+        .admin-tab { flex: 1; padding: 12px; text-align: center; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; }
+        .admin-tab.active { color: var(--beige-light); border-bottom-color: var(--beige-primary); background: var(--surface); }
+        .admin-tab-body { padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+        
+        .admin-item { display: flex; align-items: center; justify-content: space-between; background: var(--gray-subtle); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border); gap: 10px; }
+        .admin-item-info { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+        .admin-item-title { font-size: 0.9rem; font-weight: 600; color: var(--beige-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .admin-item-sub { font-size: 0.75rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+        .admin-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .btn-action { padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: none; }
+        .btn-danger { background: rgba(239, 68, 68, 0.15); color: var(--danger-btn); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .btn-warning { background: rgba(217, 119, 6, 0.15); color: var(--danger); border: 1px solid rgba(217, 119, 6, 0.3); }
+        .btn-success { background: rgba(101, 163, 13, 0.15); color: var(--success); border: 1px solid rgba(101, 163, 13, 0.3); }
+
         /* Ana Uygulama Yapısı */
         .app-wrapper { display: flex; width: 100vw; height: 100vh; opacity: 0; transition: opacity 0.4s ease; }
         .app-wrapper.visible { opacity: 1; }
@@ -52,7 +74,7 @@
         .sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10; }
         .brand-box { padding: 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); }
         .brand-logo { width: 38px; height: 38px; background: var(--gray-subtle); border: 1px solid var(--border); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .brand-logo img { width: 100%; height: 100%; object-fit: contain; padding: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+        .brand-logo img { width: 100%; height: 100%; object-fit: cover; }
         .brand-info h2 { font-size: 1rem; font-weight: 700; color: var(--beige-light); }
         .brand-info span { font-size: 0.7rem; color: var(--beige-primary); font-family: 'JetBrains Mono', monospace; }
         
@@ -119,11 +141,28 @@
         </div>
     </div>
 
+    <!-- Admin Paneli Modalı -->
+    <div id="adminModal">
+        <div class="admin-modal-content">
+            <div class="admin-modal-header">
+                <h2>⚙️ TEİAŞ Quantum Admin Paneli</h2>
+                <button class="close-admin" onclick="closeAdminPanel()">✕</button>
+            </div>
+            <div class="admin-tabs">
+                <div class="admin-tab active" id="tabMsgBtn" onclick="switchAdminTab('messages')">Mesaj Yönetimi</div>
+                <div class="admin-tab" id="tabUserBtn" onclick="switchAdminTab('users')">Kullanıcı & Ban Yönetimi</div>
+            </div>
+            <div class="admin-tab-body" id="adminTabBody">
+                <!-- Dinamik içerik buraya gelecek -->
+            </div>
+        </div>
+    </div>
+
     <div class="app-wrapper" id="appWrapper">
         <div class="sidebar">
             <div class="brand-box">
                 <div class="brand-logo">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/ea/TE%C4%B0A%C5%9E_logo.svg" alt="TEİAŞ Logo">
+                    <img src="https://www.belsiscad.com.tr/images/haber/f5ed8a68165c4f158103f7290bd0fdf0.jpg" alt="TEİAŞ Logo">
                 </div>
                 <div class="brand-info">
                     <h2>TEİAŞ Core</h2>
@@ -181,6 +220,7 @@
         var currentUserAvatar = "";
         var isLoginMode = true; 
         var ADMIN_USERNAME = "utku"; 
+        var currentAdminTab = 'messages';
 
         async function init() {
             try {
@@ -246,10 +286,15 @@
             }
 
             if (isLoginMode) {
-                var profileRes = await supabase.from('profiles').select('email').eq('username', username).single();
+                var profileRes = await supabase.from('profiles').select('email, banned_until').eq('username', username).single();
                 
                 if (profileRes.error || !profileRes.data) {
                     alert("Giriş Hatası: Bu kullanıcı adı bulunamadı!");
+                    return;
+                }
+
+                if (profileRes.data.banned_until && new Date(profileRes.data.banned_until) > new Date()) {
+                    alert("Bu hesaba erişim engellenmiştir (Banlı)!");
                     return;
                 }
 
@@ -304,7 +349,15 @@
         async function fetchUserProfile(user) {
             currentUser = user;
             
-            var { data, error } = await supabase.from('profiles').select('username, avatar_url').eq('id', user.id).single();
+            var { data, error } = await supabase.from('profiles').select('username, avatar_url, banned_until').eq('id', user.id).single();
+            
+            if (data && data.banned_until && new Date(data.banned_until) > new Date()) {
+                alert("Hesabınız banlanmıştır!");
+                await supabase.auth.signOut();
+                location.reload();
+                return;
+            }
+
             if (data) {
                 currentUsername = data.username;
                 currentUserAvatar = data.avatar_url || "";
@@ -348,11 +401,8 @@
             var urlRes = supabase.storage.from('chat-images').getPublicUrl(fileName);
             if (urlRes && urlRes.data) {
                 currentUserAvatar = urlRes.data.publicUrl;
-                
-                // Profiles tablosunu güncelle
                 await supabase.from('profiles').update({ avatar_url: currentUserAvatar }).eq('id', currentUser.id);
 
-                // Sol alttaki avatarı güncelle
                 var avatarBox = document.getElementById('userAvatarBox');
                 avatarBox.innerHTML = '<img src="' + currentUserAvatar + '" alt="PP">';
                 
@@ -386,6 +436,10 @@
                     appendMessage(payload.new);
                     var chatBox = document.getElementById('chat-messages');
                     chatBox.scrollTop = chatBox.scrollHeight;
+                })
+                .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, function(payload) {
+                    var el = document.querySelector('[data-msg-id="' + payload.old.id + '"]');
+                    if (el) el.remove();
                 })
                 .subscribe();
 
@@ -487,11 +541,125 @@
             chatBox.appendChild(card);
         }
 
+        // --- ADMIN PANEL FONKSİYONLARI ---
         function openAdminPanel() {
-            alert("Admin Paneli: Supabase veritabanındaki 'messages' tablosundan tüm mesajları doğrudan silebilir veya yönetebilirsin kanka!");
+            if (currentUsername.toLowerCase() !== ADMIN_USERNAME.toLowerCase()) return;
+            document.getElementById('adminModal').style.display = 'flex';
+            switchAdminTab('messages');
+        }
+
+        function closeAdminPanel() {
+            document.getElementById('adminModal').style.display = 'none';
+        }
+
+        function switchAdminTab(tab) {
+            currentAdminTab = tab;
+            document.getElementById('tabMsgBtn').className = 'admin-tab ' + (tab === 'messages' ? 'active' : '');
+            document.getElementById('tabUserBtn').className = 'admin-tab ' + (tab === 'users' ? 'active' : '');
+            
+            if (tab === 'messages') {
+                loadAdminMessages();
+            } else {
+                loadAdminUsers();
+            }
+        }
+
+        async function loadAdminMessages() {
+            var body = document.getElementById('adminTabBody');
+            body.innerHTML = '<div style="color:var(--text-muted); text-align:center;">Yükleniyor...</div>';
+            
+            var res = await supabase.from('messages').select('*').order('created_at', { ascending: false }).limit(50);
+            if (res.error) {
+                body.innerHTML = '<div style="color:var(--danger-btn);">Mesajlar yüklenemedi.</div>';
+                return;
+            }
+
+            if (!res.data || res.data.length === 0) {
+                body.innerHTML = '<div style="color:var(--text-muted); text-align:center;">Hiç mesaj yok.</div>';
+                return;
+            }
+
+            var html = '';
+            res.data.forEach(function(msg) {
+                var snippet = msg.content ? msg.content.substring(0, 40) : '[Medya]';
+                html += '<div class="admin-item" data-id="' + msg.id + '">';
+                html += '<div class="admin-item-info">';
+                html += '<div class="admin-item-title">' + msg.user_email + '</div>';
+                html += '<div class="admin-item-sub">' + escapeHtml(snippet) + '</div>';
+                html += '</div>';
+                html += '<div class="admin-actions">';
+                html += '<button class="btn-action btn-danger" onclick="adminDeleteMessage(\'' + msg.id + '\')">🗑️ Sil</button>';
+                html += '</div></div>';
+            });
+            body.innerHTML = html;
+        }
+
+        async function adminDeleteMessage(id) {
+            if (!confirm("Bu mesajı silmek istediğine emin misin kanka?")) return;
+            var res = await supabase.from('messages').delete().eq('id', id);
+            if (res.error) {
+                alert("Silme hatası: " + res.error.message);
+            } else {
+                var item = document.querySelector('.admin-item[data-id="' + id + '"]');
+                if (item) item.remove();
+                var chatEl = document.querySelector('[data-msg-id="' + id + '"]');
+                if (chatEl) chatEl.remove();
+            }
+        }
+
+        async function loadAdminUsers() {
+            var body = document.getElementById('adminTabBody');
+            body.innerHTML = '<div style="color:var(--text-muted); text-align:center;">Kullanıcılar yükleniyor...</div>';
+            
+            var res = await supabase.from('profiles').select('*');
+            if (res.error) {
+                body.innerHTML = '<div style="color:var(--danger-btn);">Kullanıcılar yüklenemedi.</div>';
+                return;
+            }
+
+            var html = '';
+            res.data.forEach(function(user) {
+                var isBanned = user.banned_until && new Date(user.banned_until) > new Date();
+                var statusText = isBanned ? '<span style="color:var(--danger-btn);">[BANLI]</span>' : '<span style="color:var(--success);">[Aktif]</span>';
+                
+                html += '<div class="admin-item">';
+                html += '<div class="admin-item-info">';
+                html += '<div class="admin-item-title">' + user.username + ' ' + statusText + '</div>';
+                html += '<div class="admin-item-sub">' + user.email + '</div>';
+                html += '</div>';
+                html += '<div class="admin-actions">';
+                if (isBanned) {
+                    html += '<button class="btn-action btn-success" onclick="adminUnbanUser(\'' + user.id + '\')">Banı Kaldır</button>';
+                } else {
+                    html += '<button class="btn-action btn-warning" onclick="adminBanUser(\'' + user.id + '\', 24)">24 Saat Ban</button>';
+                    html += '<button class="btn-action btn-danger" onclick="adminBanUser(\'' + user.id + '\', 99999)">Kalıcı Ban</button>';
+                }
+                html += '</div></div>';
+            });
+            body.innerHTML = html;
+        }
+
+        async function adminBanUser(userId, hours) {
+            var banUntil = new Date(new Date().getTime() + hours * 60 * 60 * 1000).toISOString();
+            var res = await supabase.from('profiles').update({ banned_until: banUntil }).eq('id', userId);
+            if (res.error) {
+                alert("Banlama hatası: " + res.error.message);
+            } else {
+                loadAdminUsers();
+            }
+        }
+
+        async function adminUnbanUser(userId) {
+            var res = await supabase.from('profiles').update({ banned_until: null }).eq('id', userId);
+            if (res.error) {
+                alert("İşlem hatası: " + res.error.message);
+            } else {
+                loadAdminUsers();
+            }
         }
 
         function escapeHtml(text) {
+            if (!text) return '';
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
 
