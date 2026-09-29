@@ -1,18 +1,18 @@
 import os
-from flask import Flask, send_from_directory, jsonify, request
-from supabase import create_client, Client
+from flask import Flask, send_from_directory, jsonify
 
 app = Flask(__name__, static_folder='public')
-
-# Supabase Bağlantısı
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_SECRET_KEY = os.environ.get("SUPABASE_SECRET_KEY")
-
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY) if SUPABASE_URL and SUPABASE_SECRET_KEY else None
 
 @app.route('/')
 def index():
     return send_from_directory('public', 'index.html')
+
+@app.route('/api/config')
+def get_config():
+    return jsonify({
+        "SUPABASE_URL": os.environ.get("SUPABASE_URL", ""),
+        "SUPABASE_KEY": os.environ.get("SUPABASE_SECRET_KEY", "")
+    })
 
 @app.route('/<path:path>')
 def serve_static(path):
