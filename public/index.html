@@ -96,10 +96,13 @@
 </head>
 <body>
 
-    <!-- AUTH MODAL (v7) -->
+    <!-- AUTH MODAL (v8 Debug) -->
     <div id="auth-modal">
         <div class="auth-container" id="auth-card">
-            <!-- Dinamik doldurulacak -->
+            <div class="auth-header">
+                <h1>Bağlantı Kuruluyor...</h1>
+                <p>Sunucu yapılandırması alınıyor</p>
+            </div>
         </div>
     </div>
 
@@ -164,6 +167,12 @@
             try {
                 const res = await fetch('/api/config');
                 const config = await res.json();
+                
+                if (!config.SUPABASE_URL || !config.SUPABASE_KEY) {
+                    alert("HATA: Render Environment Variables kısmında SUPABASE_URL veya SUPABASE_KEY eksik!");
+                    return;
+                }
+
                 supabase = window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_KEY);
 
                 const { data: { session } } = await supabase.auth.getSession();
@@ -172,16 +181,19 @@
                 }
             } catch (err) {
                 console.error("Init error:", err);
+                alert("Bağlantı Hatası: " + err.message);
             }
         }
 
         function renderAuthCard() {
             const card = document.getElementById('auth-card');
+            if (!card) return;
+            
             if (isLoginMode) {
                 card.innerHTML = `
                     <div class="auth-header">
                         <h1>Giriş Yap</h1>
-                        <p>TEİAŞ Quantum Ağına Bağlan (v7)</p>
+                        <p>TEİAŞ Quantum Ağına Bağlan</p>
                     </div>
                     <div class="input-group">
                         <input type="text" id="auth-username" placeholder="Hesap İsmi (Kullanıcı Adı)" autocapitalize="none">
@@ -199,7 +211,7 @@
                 card.innerHTML = `
                     <div class="auth-header">
                         <h1>Hesap Oluştur</h1>
-                        <p>Yeni bir hesap ismi ve şifre belirle (v7)</p>
+                        <p>Yeni bir hesap ismi ve şifre belirle</p>
                     </div>
                     <div class="input-group">
                         <input type="text" id="auth-username" placeholder="Hesap İsmi (Kullanıcı Adı)" autocapitalize="none">
@@ -222,8 +234,13 @@
         }
 
         async function handleAuthAction() {
-            const username = document.getElementById('auth-username').value.trim().toLowerCase();
-            const password = document.getElementById('auth-password').value.trim();
+            const usernameInput = document.getElementById('auth-username');
+            const passwordInput = document.getElementById('auth-password');
+            
+            if(!usernameInput || !passwordInput) return;
+            
+            const username = usernameInput.value.trim().toLowerCase();
+            const password = passwordInput.value.trim();
 
             if(!username || !password) {
                 alert("Kullanıcı adı ve şifreni eksiksiz gir kanka!");
@@ -333,7 +350,7 @@
 
             const { data: publicURL } = supabase.storage.from('chat-images').getPublicUrl(fileName);
             sendMessage(publicURL.publicUrl);
-            input.value = '';
+            input.value = ``;
         }
 
         function appendMessage(msg) {
