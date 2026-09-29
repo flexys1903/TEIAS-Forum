@@ -96,7 +96,7 @@
 </head>
 <body>
 
-    <!-- AUTH MODAL (v8 Debug) -->
+    <!-- AUTH MODAL -->
     <div id="auth-modal">
         <div class="auth-container" id="auth-card">
             <div class="auth-header">
@@ -163,25 +163,27 @@
         const ADMIN_USERNAME = "utku"; 
 
         async function init() {
-            renderAuthCard();
             try {
+                alert("1. Adım: Sunucudan config isteniyor...");
                 const res = await fetch('/api/config');
                 const config = await res.json();
                 
                 if (!config.SUPABASE_URL || !config.SUPABASE_KEY) {
-                    alert("HATA: Render Environment Variables kısmında SUPABASE_URL veya SUPABASE_KEY eksik!");
+                    alert("HATA: Render Environment Variables içinde SUPABASE_URL veya SUPABASE_KEY eksik!");
                     return;
                 }
 
+                alert("2. Adım: Supabase başlatılıyor...");
                 supabase = window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_KEY);
 
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session) {
-                    setSessionUser(session.user);
+                renderAuthCard();
+
+                const sessionRes = await supabase.auth.getSession();
+                if (sessionRes.data && sessionRes.data.session) {
+                    setSessionUser(sessionRes.data.session.user);
                 }
             } catch (err) {
-                console.error("Init error:", err);
-                alert("Bağlantı Hatası: " + err.message);
+                alert("Kritik Bağlantı Hatası: " + err.message);
             }
         }
 
@@ -249,7 +251,7 @@
 
             if (isLoginMode) {
                 const { data, error } = await supabase.auth.signInWithPassword({ 
-                    email: `${username}@teias.local`, 
+                    email: username + "@teias.local", 
                     password: password 
                 });
 
@@ -260,7 +262,7 @@
                 }
             } else {
                 const { data, error } = await supabase.auth.signUp({ 
-                    email: `${username}@teias.local`, 
+                    email: username + "@teias.local", 
                     password: password 
                 });
 
@@ -301,7 +303,7 @@
             if (error) return;
             
             const chatBox = document.getElementById('chat-messages');
-            chatBox.innerHTML = ``;
+            chatBox.innerHTML = '';
             if(data) data.forEach(msg => appendMessage(msg));
             chatBox.scrollTop = chatBox.scrollHeight;
         }
@@ -339,7 +341,7 @@
             const indicator = document.getElementById('uploadStatus');
             indicator.style.display = 'inline';
 
-            const fileName = `media_${Date.now()}_${file.name}`;
+            const fileName = 'media_' + Date.now() + '_' + file.name;
             const { data, error } = await supabase.storage.from('chat-images').upload(fileName, file);
             indicator.style.display = 'none';
 
@@ -350,7 +352,7 @@
 
             const { data: publicURL } = supabase.storage.from('chat-images').getPublicUrl(fileName);
             sendMessage(publicURL.publicUrl);
-            input.value = ``;
+            input.value = '';
         }
 
         function appendMessage(msg) {
@@ -359,25 +361,20 @@
             const isSelf = msg.user_email === currentUsername;
             
             const card = document.createElement('div');
-            card.className = `message-card ${isSelf ? 'self' : ''}`;
+            card.className = 'message-card ' + (isSelf ? 'self' : '');
             
             const timeStr = new Date(msg.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
-            let html = `
-                <div class="msg-avatar">${msg.user_email.charAt(0).toUpperCase()}</div>
-                <div class="msg-content-wrapper">
-                    <div class="msg-meta">
-                        <span>${msg.user_email}</span>
-                        <span>•</span>
-                        <span>${timeStr}</span>
-                    </div>
-                    <div class="msg-bubble">
-            `;
+            let html = '';
+            html += '<div class="msg-avatar">' + msg.user_email.charAt(0).toUpperCase() + '</div>';
+            html += '<div class="msg-content-wrapper">';
+            html += '<div class="msg-meta"><span>' + msg.user_email + '</span><span>•</span><span>' + timeStr + '</span></div>';
+            html += '<div class="msg-bubble">';
             
-            if (msg.content) html += `<div>${escapeHtml(msg.content)}</div>`;
-            if (msg.image_url) html += `<img src="${msg.image_url}" alt="Medya" onclick="window.open(this.src)">`;
+            if (msg.content) html += '<div>' + escapeHtml(msg.content) + '</div>';
+            if (msg.image_url) html += '<img src="' + msg.image_url + '" alt="Medya" onclick="window.open(this.src)">';
             
-            html += `</div></div>`;
+            html += '</div></div>';
             card.innerHTML = html;
             chatBox.appendChild(card);
         }
@@ -387,10 +384,10 @@
         }
 
         function escapeHtml(text) {
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        }
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"
+                                                                           }
 
         init();
     </script>
 </body>
-</html>
+</html>  
