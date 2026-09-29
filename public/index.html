@@ -6,35 +6,86 @@
     <title>TEİAŞ Chat Platformu</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #121212; color: #e0e0e0; height: 100vh; display: flex; flex-direction: column; }
-        header { background-color: #1e1e1e; padding: 15px 20px; border-bottom: 1px solid #2d2d2d; display: flex; justify-content: space-between; align-items: center; }
-        header h1 { font-size: 1.2rem; color: #ffffff; letter-spacing: 1px; }
-        .chat-container { flex: 1; display: flex; flex-direction: column; max-width: 900px; width: 100%; margin: 0 auto; padding: 20px; overflow: hidden; }
-        #chat-messages { flex: 1; overflow-y: auto; background: #181818; border-radius: 8px; padding: 15px; margin-bottom: 15px; border: 1px solid #2d2d2d; display: flex; flex-direction: column; gap: 10px; }
-        .message { background: #252525; padding: 10px 14px; border-radius: 6px; max-width: 75%; word-break: break-word; }
-        .message.user { background: #2d3748; align-self: flex-end; }
-        .input-area { display: flex; gap: 10px; background: #1e1e1e; padding: 10px; border-radius: 8px; border: 1px solid #2d2d2d; }
-        .input-area input { flex: 1; background: #121212; border: 1px solid #333; border-radius: 4px; padding: 10px; color: #fff; outline: none; }
-        .input-area input:focus { border-color: #555; }
-        .input-area button { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
-        .input-area button:hover { background: #2563eb; }
+        body { background-color: #0f1115; color: #e1e1e6; height: 100vh; display: flex; overflow: hidden; }
+
+        /* Sidebar / Odalar Alanı */
+        .sidebar { width: 260px; background-color: #15181e; border-right: 1px solid #222631; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; font-size: 1.1rem; font-weight: bold; color: #fff; border-bottom: 1px solid #222631; display: flex; align-items: center; gap: 10px; }
+        .channels { padding: 15px; flex: 1; overflow-y: auto; }
+        .channel-title { font-size: 0.75rem; text-transform: uppercase; color: #72767d; margin-bottom: 10px; font-weight: bold; letter-spacing: 0.5px; }
+        .channel-item { padding: 10px 12px; border-radius: 6px; cursor: pointer; color: #969ba5; font-size: 0.95rem; transition: all 0.2s ease; margin-bottom: 4px; }
+        .channel-item:hover, .channel-item.active { background-color: #20242d; color: #fff; transform: translateX(4px); }
+
+        /* Ana Sohbet Alanı */
+        .chat-area { flex: 1; display: flex; flex-direction: column; background-color: #181b22; }
+        .chat-header { padding: 15px 25px; background-color: #1a1d24; border-bottom: 1px solid #222631; display: flex; justify-content: space-between; align-items: center; }
+        .chat-header h2 { font-size: 1rem; color: #fff; }
+        .status-badge { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #3ba55d; background: rgba(59, 165, 93, 0.1); padding: 4px 10px; border-radius: 12px; }
+
+        /* Mesajlar Kutusu ve Animasyonlar */
+        #chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message { background: #20242d; padding: 12px 16px; border-radius: 8px; max-width: 75%; word-break: break-word; animation: fadeIn 0.3s ease forwards; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .message.user { background: #3b82f6; color: white; align-self: flex-end; animation: fadeIn 0.3s ease forwards; }
+        .message .author { font-size: 0.75rem; color: #a0aec0; margin-bottom: 4px; font-weight: 600; }
+        .message.user .author { color: #dbeafe; }
+
+        /* Alt Yazı Alanı */
+        .input-container { padding: 20px; background-color: #181b22; }
+        .input-wrapper { display: flex; background-color: #121418; border: 1px solid #2a2f3d; border-radius: 8px; padding: 8px 12px; transition: border-color 0.2s; }
+        .input-wrapper:focus-within { border-color: #3b82f6; }
+        .input-wrapper input { flex: 1; background: transparent; border: none; color: #fff; outline: none; font-size: 0.95rem; padding: 4px; }
+        .input-wrapper button { background-color: #3b82f6; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s, transform 0.1s; }
+        .input-wrapper button:hover { background-color: #2563eb; }
+        .input-wrapper button:active { transform: scale(0.96); }
+
+        /* Mobil Uyum */
+        @media(max-width: 768px) {
+            .sidebar { display: none; }
+        }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>🦅 TEİAŞ Chat Odası</h1>
-        <span id="status" style="font-size: 0.85rem; color: #10b981;">● Bağlandı</span>
-    </header>
-
-    <div class="chat-container">
-        <div id="chat-messages">
-            <div class="message">Sisteme hoş geldin kanka! Sohbet altyapısı aktif.</div>
+    <!-- Sol Menü / Odalar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <span>🦅</span> TEİAŞ Hub
         </div>
-        
-        <div class="input-area">
-            <input type="text" id="msgInput" placeholder="Mesajını yaz..." autofocus>
-            <button onclick="sendMessage()">Gönder</button>
+        <div class="channels">
+            <div class="channel-title">Sohbet Kanalları</div>
+            <div class="channel-item active"># genel-sohbet</div>
+            <div class="channel-item"># duyurular</div>
+            <div class="channel-item"># projeler</div>
+        </div>
+    </div>
+
+    <!-- Sağ Ana Ekran -->
+    <div class="chat-area">
+        <div class="chat-header">
+            <h2 id="current-channel-title"># genel-sohbet</h2>
+            <div class="status-badge">
+                <span style="width: 8px; height: 8px; background: #3ba55d; border-radius: 50%;"></span> Bağlı
+            </div>
+        </div>
+
+        <div id="chat-messages">
+            <div class="message">
+                <div class="author">Sistem</div>
+                <div>Tek sayfalama başarıyla tamamlandı kanka! Tasarım ve animasyonlar aktif.</div>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <div class="input-wrapper">
+                <input type="text" id="msgInput" placeholder="#genel-sohbet kanalına mesaj yaz..." autofocus>
+                <button onclick="sendMessage()">Gönder</button>
+            </div>
         </div>
     </div>
 
@@ -45,13 +96,18 @@
             if(!text) return;
 
             const chatBox = document.getElementById('chat-messages');
+            
             const msgDiv = document.createElement('div');
             msgDiv.className = 'message user';
-            msgDiv.textContent = text;
-            chatBox.appendChild(msgDiv);
+            msgDiv.innerHTML = `<div class="author">Sen</div><div>${escapeHtml(text)}</div>`;
             
+            chatBox.appendChild(msgDiv);
             input.value = '';
             chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
 
         document.getElementById('msgInput').addEventListener('keypress', function (e) {
