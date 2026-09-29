@@ -96,10 +96,10 @@
 </head>
 <body>
 
-    <!-- AUTH MODAL (DİNAMİK TEK KUTU - v5) -->
+    <!-- AUTH MODAL (SERVER-CONFIG - v7) -->
     <div id="auth-modal">
         <div class="auth-container" id="auth-card">
-            <!-- Dinamik olarak doldurulacak -->
+            <!-- Dinamik doldurulacak -->
         </div>
     </div>
 
@@ -156,7 +156,7 @@
     <script>
         let supabase;
         let currentUser = null;
-        let isLoginMode = true; // true: Giriş Yap, false: Kayıt Ol
+        let isLoginMode = true; 
         const ADMIN_USERNAME = "utku"; 
 
         async function init() {
@@ -181,7 +181,7 @@
                 card.innerHTML = `
                     <div class="auth-header">
                         <h1>Giriş Yap</h1>
-                        <p>TEİAŞ Quantum Ağına Bağlan (v5)</p>
+                        <p>TEİAŞ Quantum Ağına Bağlan (v7)</p>
                     </div>
                     <div class="input-group">
                         <input type="text" id="auth-username" placeholder="Hesap İsmi (Kullanıcı Adı)" autocapitalize="none">
@@ -199,7 +199,7 @@
                 card.innerHTML = `
                     <div class="auth-header">
                         <h1>Hesap Oluştur</h1>
-                        <p>Yeni bir hesap ismi ve şifre belirle (v5)</p>
+                        <p>Yeni bir hesap ismi ve şifre belirle (v7)</p>
                     </div>
                     <div class="input-group">
                         <input type="text" id="auth-username" placeholder="Hesap İsmi (Kullanıcı Adı)" autocapitalize="none">
