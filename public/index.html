@@ -24,7 +24,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg-deep); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
 
-        /* --- AUTH MODAL & DYNAMIC CARD --- */
         #auth-modal { position: fixed; inset: 0; background: #050508; display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
         .auth-container { width: 100%; max-width: 420px; padding: 30px; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9); position: relative; overflow: hidden; }
         .auth-container::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, #3b82f6, #10b981); }
@@ -41,7 +40,6 @@
         .auth-switch-btn { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: var(--text-muted); padding: 12px; border-radius: 10px; font-size: 0.9rem; font-weight: 500; cursor: pointer; margin-top: 20px; text-align: center; display: block; }
         .auth-switch-btn:active { background: rgba(59, 130, 246, 0.2); color: #fff; border-color: var(--accent); }
 
-        /* --- APP CORE --- */
         .app-wrapper { display: flex; width: 100vw; height: 100vh; opacity: 0; transition: opacity 0.4s ease; }
         .app-wrapper.visible { opacity: 1; }
 
@@ -96,7 +94,6 @@
 </head>
 <body>
 
-    <!-- AUTH MODAL -->
     <div id="auth-modal">
         <div class="auth-container" id="auth-card">
             <div class="auth-header">
@@ -106,7 +103,6 @@
         </div>
     </div>
 
-    <!-- APP WRAPPER -->
     <div class="app-wrapper" id="appWrapper">
         <div class="sidebar">
             <div class="brand-box">
@@ -157,28 +153,25 @@
     </div>
 
     <script>
-        let supabase;
-        let currentUser = null;
-        let isLoginMode = true; 
-        const ADMIN_USERNAME = "utku"; 
+        var supabase;
+        var currentUser = null;
+        var isLoginMode = true; 
+        var ADMIN_USERNAME = "utku"; 
 
         async function init() {
             try {
-                alert("1. Adım: Sunucudan config isteniyor...");
-                const res = await fetch('/api/config');
-                const config = await res.json();
+                var res = await fetch('/api/config');
+                var config = await res.json();
                 
                 if (!config.SUPABASE_URL || !config.SUPABASE_KEY) {
                     alert("HATA: Render Environment Variables içinde SUPABASE_URL veya SUPABASE_KEY eksik!");
                     return;
                 }
 
-                alert("2. Adım: Supabase başlatılıyor...");
                 supabase = window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_KEY);
-
                 renderAuthCard();
 
-                const sessionRes = await supabase.auth.getSession();
+                var sessionRes = await supabase.auth.getSession();
                 if (sessionRes.data && sessionRes.data.session) {
                     setSessionUser(sessionRes.data.session.user);
                 }
@@ -188,46 +181,24 @@
         }
 
         function renderAuthCard() {
-            const card = document.getElementById('auth-card');
+            var card = document.getElementById('auth-card');
             if (!card) return;
             
+            var html = '';
             if (isLoginMode) {
-                card.innerHTML = `
-                    <div class="auth-header">
-                        <h1>Giriş Yap</h1>
-                        <p>TEİAŞ Quantum Ağına Bağlan</p>
-                    </div>
-                    <div class="input-group">
-                        <input type="text" id="auth-username" placeholder="Hesap İsmi (Kullanıcı Adı)" autocapitalize="none">
-                    </div>
-                    <div class="input-group">
-                        <input type="password" id="auth-password" placeholder="Şifre">
-                    </div>
-                    <button class="btn-primary" onclick="handleAuthAction()">Giriş Yap</button>
-                    
-                    <button type="button" class="auth-switch-btn" onclick="toggleMode()">
-                        Hesabın yok mu? Kayıt ol ⚡
-                    </button>
-                `;
+                html += '<div class="auth-header"><h1>Giriş Yap</h1><p>TEİAŞ Quantum Ağına Bağlan</p></div>';
+                html += '<div class="input-group"><input type="text" id="auth-username" placeholder="Hesap İsmi (Kullanıcı Adı)" autocapitalize="none"></div>';
+                html += '<div class="input-group"><input type="password" id="auth-password" placeholder="Şifre"></div>';
+                html += '<button class="btn-primary" onclick="handleAuthAction()">Giriş Yap</button>';
+                html += '<button type="button" class="auth-switch-btn" onclick="toggleMode()">Hesabın yok mu? Kayıt ol ⚡</button>';
             } else {
-                card.innerHTML = `
-                    <div class="auth-header">
-                        <h1>Hesap Oluştur</h1>
-                        <p>Yeni bir hesap ismi ve şifre belirle</p>
-                    </div>
-                    <div class="input-group">
-                        <input type="text" id="auth-username" placeholder="Hesap İsmi (Kullanıcı Adı)" autocapitalize="none">
-                    </div>
-                    <div class="input-group">
-                        <input type="password" id="auth-password" placeholder="Şifre">
-                    </div>
-                    <button class="btn-primary" onclick="handleAuthAction()">Kayıt Ol ve Başla</button>
-                    
-                    <button type="button" class="auth-switch-btn" onclick="toggleMode()">
-                        Zaten hesabın var mı? Giriş yap ⚡
-                    </button>
-                `;
+                html += '<div class="auth-header"><h1>Hesap Oluştur</h1><p>Yeni bir hesap ismi ve şifre belirle</p></div>';
+                html += '<div class="input-group"><input type="text" id="auth-username" placeholder="Hesap İsmi (Kullanıcı Adı)" autocapitalize="none"></div>';
+                html += '<div class="input-group"><input type="password" id="auth-password" placeholder="Şifre"></div>';
+                html += '<button class="btn-primary" onclick="handleAuthAction()">Kayıt Ol ve Başla</button>';
+                html += '<button type="button" class="auth-switch-btn" onclick="toggleMode()">Zaten hesabın var mı? Giriş yap ⚡</button>';
             }
+            card.innerHTML = html;
         }
 
         function toggleMode() {
@@ -236,13 +207,13 @@
         }
 
         async function handleAuthAction() {
-            const usernameInput = document.getElementById('auth-username');
-            const passwordInput = document.getElementById('auth-password');
+            var usernameInput = document.getElementById('auth-username');
+            var passwordInput = document.getElementById('auth-password');
             
             if(!usernameInput || !passwordInput) return;
             
-            const username = usernameInput.value.trim().toLowerCase();
-            const password = passwordInput.value.trim();
+            var username = usernameInput.value.trim().toLowerCase();
+            var password = passwordInput.value.trim();
 
             if(!username || !password) {
                 alert("Kullanıcı adı ve şifreni eksiksiz gir kanka!");
@@ -250,24 +221,24 @@
             }
 
             if (isLoginMode) {
-                const { data, error } = await supabase.auth.signInWithPassword({ 
+                var result = await supabase.auth.signInWithPassword({ 
                     email: username + "@teias.local", 
                     password: password 
                 });
 
-                if(error) {
+                if(result.error) {
                     alert("Giriş Hatası: Hesap ismi veya şifre hatalı!");
                 } else {
-                    setSessionUser(data.user);
+                    setSessionUser(result.data.user);
                 }
             } else {
-                const { data, error } = await supabase.auth.signUp({ 
+                var resultUp = await supabase.auth.signUp({ 
                     email: username + "@teias.local", 
                     password: password 
                 });
 
-                if(error) {
-                    alert("Kayıt Hatası: " + error.message);
+                if(resultUp.error) {
+                    alert("Kayıt Hatası: " + resultUp.error.message);
                 } else {
                     alert("Hesabın başarıyla oluşturuldu! Şimdi giriş yapabilirsin.");
                     isLoginMode = true;
@@ -281,7 +252,7 @@
             document.getElementById('auth-modal').style.display = 'none';
             document.getElementById('appWrapper').classList.add('visible');
             
-            const username = currentUser.email.split('@')[0];
+            var username = currentUser.email.split('@')[0];
             document.getElementById('userDisplayName').textContent = username;
             document.getElementById('userAvatarSymbol').textContent = username.charAt(0).toUpperCase();
             
@@ -299,80 +270,93 @@
         }
 
         async function loadMessages() {
-            const { data, error } = await supabase.from('messages').select('*').order('created_at', { ascending: true });
-            if (error) return;
+            var res = await supabase.from('messages').select('*').order('created_at', { ascending: true });
+            if (res.error) return;
             
-            const chatBox = document.getElementById('chat-messages');
+            var chatBox = document.getElementById('chat-messages');
             chatBox.innerHTML = '';
-            if(data) data.forEach(msg => appendMessage(msg));
+            if(res.data) {
+                res.data.forEach(function(msg) {
+                    appendMessage(msg);
+                });
+            }
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         function subscribeRealtime() {
             supabase.channel('public:messages')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, function(payload) {
                     appendMessage(payload.new);
-                    const chatBox = document.getElementById('chat-messages');
+                    var chatBox = document.getElementById('chat-messages');
                     chatBox.scrollTop = chatBox.scrollHeight;
                 })
                 .subscribe();
         }
 
-        async function sendMessage(mediaUrl = null) {
-            const input = document.getElementById('msgInput');
-            const text = input.value.trim();
+        async function sendMessage(mediaUrl) {
+            var input = document.getElementById('msgInput');
+            var text = input.value.trim();
             if (!text && !mediaUrl) return;
 
-            const username = currentUser.email.split('@')[0];
+            var username = currentUser.email.split('@')[0];
 
-            const { error } = await supabase.from('messages').insert([{
+            var res = await supabase.from('messages').insert([{
                 user_email: username,
                 content: text,
-                image_url: mediaUrl
+                image_url: mediaUrl || null
             }]);
 
-            if (!error) input.value = '';
+            if (!res.error) {
+                input.value = '';
+            }
         }
 
-        async function uploadFile(input) {
-            const file = input.files[0];
+        async function uploadFile(inputElement) {
+            var file = inputElement.files[0];
             if (!file) return;
 
-            const indicator = document.getElementById('uploadStatus');
+            var indicator = document.getElementById('uploadStatus');
             indicator.style.display = 'inline';
 
-            const fileName = 'media_' + Date.now() + '_' + file.name;
-            const { data, error } = await supabase.storage.from('chat-images').upload(fileName, file);
+            var fileName = 'media_' + Date.now() + '_' + file.name;
+            var uploadRes = await supabase.storage.from('chat-images').upload(fileName, file);
             indicator.style.display = 'none';
 
-            if (error) {
-                alert("Yükleme hatası: " + error.message);
+            if (uploadRes.error) {
+                alert("Yükleme hatası: " + uploadRes.error.message);
                 return;
             }
 
-            const { data: publicURL } = supabase.storage.from('chat-images').getPublicUrl(fileName);
-            sendMessage(publicURL.publicUrl);
-            input.value = '';
+            var urlRes = supabase.storage.from('chat-images').getPublicUrl(fileName);
+            if (urlRes && urlRes.data) {
+                sendMessage(urlRes.data.publicUrl);
+            }
+            inputElement.value = '';
         }
 
         function appendMessage(msg) {
-            const chatBox = document.getElementById('chat-messages');
-            const currentUsername = currentUser ? currentUser.email.split('@')[0] : '';
-            const isSelf = msg.user_email === currentUsername;
+            var chatBox = document.getElementById('chat-messages');
+            var currentUsername = currentUser ? currentUser.email.split('@')[0] : '';
+            var isSelf = msg.user_email === currentUsername;
             
-            const card = document.createElement('div');
+            var card = document.createElement('div');
             card.className = 'message-card ' + (isSelf ? 'self' : '');
             
-            const timeStr = new Date(msg.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            var dateObj = msg.created_at ? new Date(msg.created_at) : new Date();
+            var timeStr = dateObj.toLocaleTimeString();
             
-            let html = '';
+            var html = '';
             html += '<div class="msg-avatar">' + msg.user_email.charAt(0).toUpperCase() + '</div>';
             html += '<div class="msg-content-wrapper">';
             html += '<div class="msg-meta"><span>' + msg.user_email + '</span><span>•</span><span>' + timeStr + '</span></div>';
             html += '<div class="msg-bubble">';
             
-            if (msg.content) html += '<div>' + escapeHtml(msg.content) + '</div>';
-            if (msg.image_url) html += '<img src="' + msg.image_url + '" alt="Medya" onclick="window.open(this.src)">';
+            if (msg.content) {
+                html += '<div>' + escapeHtml(msg.content) + '</div>';
+            }
+            if (msg.image_url) {
+                html += '<img src="' + msg.image_url + '" alt="Medya" onclick="window.open(this.src)">';
+            }
             
             html += '</div></div>';
             card.innerHTML = html;
@@ -384,10 +368,10 @@
         }
 
         function escapeHtml(text) {
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"
-                                                                           }
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
 
         init();
     </script>
 </body>
-</html>  
+</html>
