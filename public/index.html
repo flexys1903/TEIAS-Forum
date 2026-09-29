@@ -155,6 +155,7 @@
     <script>
         var supabase;
         var currentUser = null;
+        var currentUsername = "";
         var isLoginMode = true; 
         var ADMIN_USERNAME = "utku"; 
 
@@ -173,7 +174,7 @@
 
                 var sessionRes = await supabase.auth.getSession();
                 if (sessionRes.data && sessionRes.data.session) {
-                    setSessionUser(sessionRes.data.session.user);
+                    await fetchUserProfile(sessionRes.data.session.user);
                 }
             } catch (err) {
                 alert("Kritik Bağlantı Hatası: " + err.message);
@@ -192,8 +193,9 @@
                 html += '<button class="btn-primary" onclick="handleAuthAction()">Giriş Yap</button>';
                 html += '<button type="button" class="auth-switch-btn" onclick="toggleMode()">Hesabın yok mu? Kayıt ol ⚡</button>';
             } else {
-                html += '<div class="auth-header"><h1>Hesap Oluştur</h1><p>Benzersiz bir kullanıcı adı ve şifre belirle</p></div>';
+                html += '<div class="auth-header"><h1>Hesap Oluştur</h1><p>Benzersiz kullanıcı adı, e-posta ve şifre belirle</p></div>';
                 html += '<div class="input-group"><input type="text" id="auth-username" placeholder="Kullanıcı Adı (Benzersiz)" autocapitalize="none"></div>';
+                html += '<div class="input-group"><input type="email" id="auth-email" placeholder="Gerçek E-posta Adresin"></div>';
                 html += '<div class="input-group"><input type="password" id="auth-password" placeholder="Şifre"></div>';
                 html += '<button class="btn-primary" onclick="handleAuthAction()">Kayıt Ol ve Başla</button>';
                 html += '<button type="button" class="auth-switch-btn" onclick="toggleMode()">Zaten hesabın var mı? Giriş yap ⚡</button>';
@@ -221,47 +223,77 @@
             }
 
             if (isLoginMode) {
+                // Kullanıcı adından e-posta adresini bulup giriş yapacağız
+                var profileRes = await supabase.from('profiles').select('email').eq('username', username).single();
+                
+                if (profileRes.error || !profileRes.data) {
+                    alert("Giriş Hatası: Bu kullanıcı adı bulunamadı!");
+                    return;
+                }
+
                 var result = await supabase.auth.signInWithPassword({ 
-                    email: username + "@teias.com", 
+                    email: profileRes.data.email, 
                     password: password 
                 });
 
                 if(result.error) {
-                    alert("Giriş Hatası: Kullanıcı adı veya şifre hatalı!");
+                    alert("Giriş Hatası: Şifre hatalı veya e-posta henüz onaylanmamış!");
                 } else {
-                    setSessionUser(result.data.user);
+                    await fetchUserProfile(result.data.user);
                 }
             } else {
+                var emailInput = document.getElementById('auth-email');
+                if(!emailInput) return;
+                var email = emailInput.value.trim();
+
+                if(!email) {
+                    alert("Lütfen geçerli bir e-posta adresi gir kanka!");
+                    return;
+                }
+
+                // Kullanıcı adının daha önce alınıp alınmadığını kontrol et
+                var checkRes = await supabase.from('profiles').select('username').eq('username', username).single();
+                if (checkRes.data) {
+                    alert("Kayıt Hatası: Bu kullanıcı adı zaten başkası tarafından alınmış kanka!");
+                    return;
+                }
+
                 var resultUp = await supabase.auth.signUp({ 
-                    email: username + "@teias.com", 
-                    password: password 
+                    email: email, 
+                    password: password,
+                    options: {
+                        data: { username: username }
+                    }
                 });
 
                 if(resultUp.error) {
-                    var errMsg = resultUp.error.message;
-                    if (errMsg.includes("already registered") || errMsg.includes("User already registered")) {
-                        alert("Kayıt Hatası: Bu kullanıcı adı zaten başkası tarafından alınmış kanka! Başka bir isim seç.");
-                    } else {
-                        alert("Kayıt Hatası: " + errMsg);
-                    }
+                    alert("Kayıt Hatası: " + resultUp.error.message);
                 } else {
-                    alert("Hesabın başarıyla oluşturuldu! Şimdi giriş yapabilirsin.");
+                    alert("Kayıt başarılı! E-posta adresine gönderilen onay linkine tıklayarak hesabını aktifleştir.");
                     isLoginMode = true;
                     renderAuthCard();
                 }
             }
         }
 
-        function setSessionUser(user) {
+        async function fetchUserProfile(user) {
             currentUser = user;
+            
+            // Profiles tablosundan kullanıcının özel adını çek
+            var { data, error } = await supabase.from('profiles').select('username').eq('id', user.id).single();
+            if (data) {
+                currentUsername = data.username;
+            } else {
+                currentUsername = user.email.split('@')[0];
+            }
+
             document.getElementById('auth-modal').style.display = 'none';
             document.getElementById('appWrapper').classList.add('visible');
             
-            var username = currentUser.email.split('@')[0];
-            document.getElementById('userDisplayName').textContent = username;
-            document.getElementById('userAvatarSymbol').textContent = username.charAt(0).toUpperCase();
+            document.getElementById('userDisplayName').textContent = currentUsername;
+            document.getElementById('userAvatarSymbol').textContent = currentUsername.charAt(0).toUpperCase();
             
-            if (username.toLowerCase() === ADMIN_USERNAME.toLowerCase()) {
+            if (currentUsername.toLowerCase() === ADMIN_USERNAME.toLowerCase()) {
                 document.getElementById('adminBtn').style.display = 'block';
             }
 
@@ -303,10 +335,8 @@
             var text = input.value.trim();
             if (!text && !mediaUrl) return;
 
-            var username = currentUser.email.split('@')[0];
-
             var res = await supabase.from('messages').insert([{
-                user_email: username,
+                user_email: currentUsername,
                 content: text,
                 image_url: mediaUrl || null
             }]);
@@ -341,7 +371,6 @@
 
         function appendMessage(msg) {
             var chatBox = document.getElementById('chat-messages');
-            var currentUsername = currentUser ? currentUser.email.split('@')[0] : '';
             var isSelf = msg.user_email === currentUsername;
             
             var card = document.createElement('div');
