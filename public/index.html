@@ -187,13 +187,13 @@
             var html = '';
             if (isLoginMode) {
                 html += '<div class="auth-header"><h1>Giriş Yap</h1><p>TEİAŞ Quantum Ağına Bağlan</p></div>';
-                html += '<div class="input-group"><input type="text" id="auth-username" placeholder="Hesap İsmi (Kullanıcı Adı)" autocapitalize="none"></div>';
+                html += '<div class="input-group"><input type="text" id="auth-username" placeholder="Kullanıcı Adı" autocapitalize="none"></div>';
                 html += '<div class="input-group"><input type="password" id="auth-password" placeholder="Şifre"></div>';
                 html += '<button class="btn-primary" onclick="handleAuthAction()">Giriş Yap</button>';
                 html += '<button type="button" class="auth-switch-btn" onclick="toggleMode()">Hesabın yok mu? Kayıt ol ⚡</button>';
             } else {
-                html += '<div class="auth-header"><h1>Hesap Oluştur</h1><p>Yeni bir hesap ismi ve şifre belirle</p></div>';
-                html += '<div class="input-group"><input type="text" id="auth-username" placeholder="Hesap İsmi (Kullanıcı Adı)" autocapitalize="none"></div>';
+                html += '<div class="auth-header"><h1>Hesap Oluştur</h1><p>Benzersiz bir kullanıcı adı ve şifre belirle</p></div>';
+                html += '<div class="input-group"><input type="text" id="auth-username" placeholder="Kullanıcı Adı (Benzersiz)" autocapitalize="none"></div>';
                 html += '<div class="input-group"><input type="password" id="auth-password" placeholder="Şifre"></div>';
                 html += '<button class="btn-primary" onclick="handleAuthAction()">Kayıt Ol ve Başla</button>';
                 html += '<button type="button" class="auth-switch-btn" onclick="toggleMode()">Zaten hesabın var mı? Giriş yap ⚡</button>';
@@ -222,23 +222,28 @@
 
             if (isLoginMode) {
                 var result = await supabase.auth.signInWithPassword({ 
-                    email: username + "@teias.local", 
+                    email: username + "@teias.com", 
                     password: password 
                 });
 
                 if(result.error) {
-                    alert("Giriş Hatası: Hesap ismi veya şifre hatalı!");
+                    alert("Giriş Hatası: Kullanıcı adı veya şifre hatalı!");
                 } else {
                     setSessionUser(result.data.user);
                 }
             } else {
                 var resultUp = await supabase.auth.signUp({ 
-                    email: username + "@teias.local", 
+                    email: username + "@teias.com", 
                     password: password 
                 });
 
                 if(resultUp.error) {
-                    alert("Kayıt Hatası: " + resultUp.error.message);
+                    var errMsg = resultUp.error.message;
+                    if (errMsg.includes("already registered") || errMsg.includes("User already registered")) {
+                        alert("Kayıt Hatası: Bu kullanıcı adı zaten başkası tarafından alınmış kanka! Başka bir isim seç.");
+                    } else {
+                        alert("Kayıt Hatası: " + errMsg);
+                    }
                 } else {
                     alert("Hesabın başarıyla oluşturuldu! Şimdi giriş yapabilirsin.");
                     isLoginMode = true;
