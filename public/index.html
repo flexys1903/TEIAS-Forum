@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TEİAŞ Quantum Core // Admin Edition</title>
+    <title>TEİAŞ Arıza Servisi // Admin Paneli</title>
+    <!-- Tarayıcı Sekme Simge (Favicon) -->
+    <link rel="icon" type="image/jpeg" href="https://www.belsiscad.com.tr/images/haber/f5ed8a68165c4f158103f7290bd0fdf0.jpg">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
@@ -73,9 +75,10 @@
         /* Sidebar */
         .sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10; }
         .brand-box { padding: 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); }
-        .brand-logo { width: 38px; height: 38px; background: var(--gray-subtle); border: 1px solid var(--border); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .brand-logo { width: 38px; height: 38px; background: var(--gray-subtle); border: 1px solid var(--border); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
         .brand-logo img { width: 100%; height: 100%; object-fit: cover; }
-        .brand-info h2 { font-size: 1rem; font-weight: 700; color: var(--beige-light); }
+        .brand-info { overflow: hidden; }
+        .brand-info h2 { font-size: 0.9rem; font-weight: 700; color: var(--beige-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .brand-info span { font-size: 0.7rem; color: var(--beige-primary); font-family: 'JetBrains Mono', monospace; }
         
         .nav-section { padding: 15px; flex: 1; overflow-y: auto; }
@@ -145,7 +148,7 @@
     <div id="adminModal">
         <div class="admin-modal-content">
             <div class="admin-modal-header">
-                <h2>⚙️ TEİAŞ Quantum Admin Paneli</h2>
+                <h2>⚙️️ TEİAŞ Arıza Servisi Admin Paneli</h2>
                 <button class="close-admin" onclick="closeAdminPanel()">✕</button>
             </div>
             <div class="admin-tabs">
@@ -165,13 +168,13 @@
                     <img src="https://www.belsiscad.com.tr/images/haber/f5ed8a68165c4f158103f7290bd0fdf0.jpg" alt="TEİAŞ Logo">
                 </div>
                 <div class="brand-info">
-                    <h2>TEİAŞ Core</h2>
+                    <h2>TEİAŞ Arıza Servisi</h2>
                     <span>Canlı Ağ</span>
                 </div>
             </div>
             <div class="nav-section">
                 <div class="nav-label">Kanallar</div>
-                <div class="nav-item active"># quantum-genel</div>
+                <div class="nav-item active"># arıza-tespit</div>
             </div>
             
             <div id="adminBtn" class="admin-panel-btn" onclick="openAdminPanel()">⚙️ Admin Paneli</div>
@@ -192,8 +195,8 @@
         <div class="workspace">
             <div class="workspace-header">
                 <div class="workspace-title">
-                    <h3># quantum-genel</h3>
-                    <p>Uçtan uca şifreli kanal</p>
+                    <h3># arıza-tespit</h3>
+                    <p>Uçtan uca şifreli arıza bildirim kanalı</p>
                 </div>
             </div>
 
@@ -206,7 +209,7 @@
                         <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="uploadFile(this)">
                     </label>
                     <span class="uploading-indicator" id="uploadStatus">Yükleniyor...</span>
-                    <input type="text" id="msgInput" placeholder="Mesajını ilet..." onkeypress="if(event.key==='Enter') sendMessage()">
+                    <input type="text" id="msgInput" placeholder="Arıza detayını ilet..." onkeypress="if(event.key==='Enter') sendMessage()">
                     <button class="send-btn" onclick="sendMessage()">İlet</button>
                 </div>
             </div>
@@ -250,7 +253,7 @@
             
             var html = '';
             if (isLoginMode) {
-                html += '<div class="auth-header"><h1>Giriş Yap</h1><p>TEİAŞ Quantum Ağına Bağlan</p></div>';
+                html += '<div class="auth-header"><h1>Giriş Yap</h1><p>TEİAŞ Arıza Servisine Bağlan</p></div>';
                 html += '<div class="input-group"><input type="text" id="auth-username" placeholder="Kullanıcı Adı" autocapitalize="none"></div>';
                 html += '<div class="input-group"><input type="password" id="auth-password" placeholder="Şifre"></div>';
                 html += '<button class="btn-primary" onclick="handleAuthAction()">Giriş Yap</button>';
@@ -390,7 +393,9 @@
             var file = inputElement.files[0];
             if (!file) return;
 
-            var fileName = 'avatar_' + currentUser.id + '_' + Date.now() + '_' + file.name;
+            var fileExt = file.name.split('.').pop();
+            var fileName = 'avatar_' + currentUser.id + '_' + Date.now() + '.' + fileExt;
+            
             var uploadRes = await supabase.storage.from('chat-images').upload(fileName, file);
 
             if (uploadRes.error) {
@@ -485,7 +490,9 @@
             var indicator = document.getElementById('uploadStatus');
             indicator.style.display = 'inline';
 
-            var fileName = 'media_' + Date.now() + '_' + file.name;
+            var fileExt = file.name.split('.').pop();
+            var fileName = 'media_' + Date.now() + '_' + Math.floor(Math.random() * 10000) + '.' + fileExt;
+            
             var uploadRes = await supabase.storage.from('chat-images').upload(fileName, file);
             indicator.style.display = 'none';
 
