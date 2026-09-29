@@ -3,89 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TEİAŞ Quantum Core // Secure Comms</title>
+    <title>TEİAŞ Quantum Core // Beige & Gray Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-deep: #050508;
-            --surface: #0d0f16;
-            --surface-hover: #161a26;
-            --border: rgba(255, 255, 255, 0.1);
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.3);
-            --text-main: #f1f5f9;
-            --text-muted: #94a3b8;
-            --danger: #ef4444;
-            --success: #10b981;
-            --admin-gold: #f59e0b;
+            --bg-deep: #141416;
+            --surface: #1c1c20;
+            --surface-hover: #26262c;
+            --border: rgba(212, 181, 157, 0.15);
+            --beige-primary: #d4b59d;
+            --beige-light: #f5f0eb;
+            --beige-dark: #b8977e;
+            --text-main: #f5f0eb;
+            --text-muted: #a39b93;
+            --gray-subtle: #2b2b33;
+            --danger: #d97706;
+            --success: #65a30d;
+            --admin-gold: #d4b59d;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg-deep); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
 
-        #auth-modal { position: fixed; inset: 0; background: #050508; display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
-        .auth-container { width: 100%; max-width: 420px; padding: 30px; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9); position: relative; overflow: hidden; }
-        .auth-container::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, #3b82f6, #10b981); }
+        /* Auth Modal (Gri & Bej) */
+        #auth-modal { position: fixed; inset: 0; background: var(--bg-deep); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
+        .auth-container { width: 100%; max-width: 420px; padding: 35px; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); position: relative; overflow: hidden; }
+        .auth-container::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, var(--beige-primary), var(--beige-dark)); }
         .auth-header { text-align: center; margin-bottom: 25px; }
-        .auth-header h1 { font-size: 1.6rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
+        .auth-header h1 { font-size: 1.6rem; font-weight: 700; color: var(--beige-light); margin-bottom: 6px; }
         .auth-header p { color: var(--text-muted); font-size: 0.85rem; }
         
         .input-group { margin-bottom: 16px; }
-        .input-group input { width: 100%; background: rgba(0, 0, 0, 0.6); border: 1px solid var(--border); padding: 14px 16px; border-radius: 12px; color: #fff; font-size: 1rem; outline: none; }
-        .input-group input:focus { border-color: var(--accent); }
+        .input-group input { width: 100%; background: var(--gray-subtle); border: 1px solid var(--border); padding: 14px 16px; border-radius: 12px; color: var(--beige-light); font-size: 1rem; outline: none; transition: border-color 0.2s; }
+        .input-group input:focus { border-color: var(--beige-primary); }
         
-        .btn-primary { width: 100%; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; border: none; padding: 14px; border-radius: 12px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 5px; }
+        .btn-primary { width: 100%; background: linear-gradient(135deg, var(--beige-primary), var(--beige-dark)); color: #141416; border: none; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 5px; transition: opacity 0.2s; }
+        .btn-primary:active { opacity: 0.9; }
         
-        .auth-switch-btn { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: var(--text-muted); padding: 12px; border-radius: 10px; font-size: 0.9rem; font-weight: 500; cursor: pointer; margin-top: 20px; text-align: center; display: block; }
-        .auth-switch-btn:active { background: rgba(59, 130, 246, 0.2); color: #fff; border-color: var(--accent); }
+        .auth-switch-btn { width: 100%; background: rgba(255,255,255,0.02); border: 1px solid var(--border); color: var(--text-muted); padding: 12px; border-radius: 10px; font-size: 0.9rem; font-weight: 500; cursor: pointer; margin-top: 20px; text-align: center; display: block; }
+        .auth-switch-btn:active { background: rgba(212, 181, 157, 0.1); color: var(--beige-light); }
 
+        /* Ana Uygulama Yapısı */
         .app-wrapper { display: flex; width: 100vw; height: 100vh; opacity: 0; transition: opacity 0.4s ease; }
         .app-wrapper.visible { opacity: 1; }
 
+        /* Sidebar (Gri & Bej) */
         .sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10; }
         .brand-box { padding: 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); }
-        .brand-logo { width: 38px; height: 38px; background: linear-gradient(135deg, #3b82f6, #10b981); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
-        .brand-info h2 { font-size: 1rem; font-weight: 700; color: #fff; }
-        .brand-info span { font-size: 0.7rem; color: var(--success); font-family: 'JetBrains Mono', monospace; }
+        .brand-logo { width: 38px; height: 38px; background: linear-gradient(135deg, var(--beige-primary), var(--beige-dark)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #141416; font-weight: 700; }
+        .brand-info h2 { font-size: 1rem; font-weight: 700; color: var(--beige-light); }
+        .brand-info span { font-size: 0.7rem; color: var(--beige-primary); font-family: 'JetBrains Mono', monospace; }
         
         .nav-section { padding: 15px; flex: 1; overflow-y: auto; }
         .nav-label { font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 1px; margin-bottom: 10px; padding-left: 8px; }
         .nav-item { padding: 10px 14px; border-radius: 8px; color: var(--text-muted); font-size: 0.9rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px; }
-        .nav-item.active { background: rgba(59, 130, 246, 0.15); color: #fff; border-left: 3px solid var(--accent); }
+        .nav-item.active { background: rgba(212, 181, 157, 0.12); color: var(--beige-light); border-left: 3px solid var(--beige-primary); }
 
-        .admin-panel-btn { margin: 15px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--admin-gold); padding: 10px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: none; text-align: center; }
+        .admin-panel-btn { margin: 15px; background: rgba(212, 181, 157, 0.08); border: 1px solid rgba(212, 181, 157, 0.2); color: var(--beige-primary); padding: 10px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: none; text-align: center; }
 
-        .user-footer { padding: 15px; background: rgba(0,0,0,0.3); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .user-footer { padding: 15px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
         .user-meta { display: flex; align-items: center; gap: 10px; }
-        .user-avatar { width: 32px; height: 32px; background: #252836; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; color: var(--accent); }
-        .user-name { font-size: 0.85rem; font-weight: 600; color: #fff; max-width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .logout-btn { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: var(--danger); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .user-avatar { width: 32px; height: 32px; background: var(--gray-subtle); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; color: var(--beige-primary); }
+        .user-name { font-size: 0.85rem; font-weight: 600; color: var(--beige-light); max-width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .logout-btn { background: rgba(217, 119, 6, 0.1); border: 1px solid rgba(217, 119, 6, 0.2); color: var(--beige-primary); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
+        /* Workspace & Chat */
         .workspace { flex: 1; display: flex; flex-direction: column; background: var(--bg-deep); position: relative; }
         .workspace-header { padding: 16px 20px; background: var(--surface); border-bottom: 1px solid var(--border); }
-        .workspace-title h3 { font-size: 1rem; font-weight: 600; color: #fff; }
+        .workspace-title h3 { font-size: 1rem; font-weight: 600; color: var(--beige-light); }
         .workspace-title p { font-size: 0.75rem; color: var(--text-muted); }
 
         #chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
         
         .message-card { display: flex; gap: 12px; max-width: 85%; }
         .message-card.self { align-self: flex-end; flex-direction: row-reverse; }
-        .msg-avatar { width: 36px; height: 36px; border-radius: 10px; background: #1e293b; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--accent); flex-shrink: 0; font-size: 0.85rem; }
-        .message-card.self .msg-avatar { background: #2563eb; color: #fff; }
+        .msg-avatar { width: 36px; height: 36px; border-radius: 10px; background: var(--gray-subtle); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--beige-primary); flex-shrink: 0; font-size: 0.85rem; }
+        .message-card.self .msg-avatar { background: var(--beige-primary); color: #141416; }
         .msg-content-wrapper { display: flex; flex-direction: column; gap: 4px; }
         .message-card.self .msg-content-wrapper { align-items: flex-end; }
         .msg-meta { font-size: 0.7rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+        
         .msg-bubble { background: var(--surface); border: 1px solid var(--border); padding: 12px 16px; border-radius: 14px; color: var(--text-main); font-size: 0.9rem; word-break: break-word; }
-        .message-card.self .msg-bubble { background: #2563eb; color: #fff; }
+        .message-card.self .msg-bubble { background: var(--beige-primary); color: #141416; border-color: var(--beige-primary); font-weight: 500; }
         .msg-bubble img { max-width: 260px; max-height: 200px; border-radius: 8px; margin-top: 8px; display: block; }
 
+        /* Input Dock */
         .input-dock { padding: 16px 20px; background: var(--surface); border-top: 1px solid var(--border); }
-        .input-box { display: flex; align-items: center; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border); border-radius: 14px; padding: 6px 10px; gap: 10px; }
+        .input-box { display: flex; align-items: center; background: var(--gray-subtle); border: 1px solid var(--border); border-radius: 14px; padding: 6px 10px; gap: 10px; }
         .attach-btn { background: transparent; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; }
-        .input-box input[type="text"] { flex: 1; background: transparent; border: none; color: #fff; outline: none; font-size: 0.95rem; padding: 6px; }
-        .send-btn { background: #2563eb; border: none; color: #fff; padding: 10px 18px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
-        .uploading-indicator { font-size: 0.75rem; color: var(--accent); display: none; font-family: 'JetBrains Mono', monospace; }
+        .input-box input[type="text"] { flex: 1; background: transparent; border: none; color: var(--beige-light); outline: none; font-size: 0.95rem; padding: 6px; }
+        .send-btn { background: var(--beige-primary); border: none; color: #141416; padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.9rem; transition: opacity 0.2s; }
+        .send-btn:active { opacity: 0.85; }
+        .uploading-indicator { font-size: 0.75rem; color: var(--beige-primary); display: none; font-family: 'JetBrains Mono', monospace; }
 
         @media (max-width: 768px) {
             .sidebar { display: none; }
@@ -195,7 +205,7 @@
             } else {
                 html += '<div class="auth-header"><h1>Hesap Oluştur</h1><p>Benzersiz kullanıcı adı, e-posta ve şifre belirle</p></div>';
                 html += '<div class="input-group"><input type="text" id="auth-username" placeholder="Kullanıcı Adı (Benzersiz)" autocapitalize="none"></div>';
-                html += '<div class="input-group"><input type="email" id="auth-email" placeholder="Gerçek E-posta Adresin"></div>';
+                html += '<div class="input-group"><input type="email" id="auth-email" placeholder="E-posta Adresin"></div>';
                 html += '<div class="input-group"><input type="password" id="auth-password" placeholder="Şifre"></div>';
                 html += '<button class="btn-primary" onclick="handleAuthAction()">Kayıt Ol ve Başla</button>';
                 html += '<button type="button" class="auth-switch-btn" onclick="toggleMode()">Zaten hesabın var mı? Giriş yap ⚡</button>';
@@ -223,7 +233,6 @@
             }
 
             if (isLoginMode) {
-                // Kullanıcı adından e-posta adresini bulup giriş yapacağız
                 var profileRes = await supabase.from('profiles').select('email').eq('username', username).single();
                 
                 if (profileRes.error || !profileRes.data) {
@@ -237,7 +246,7 @@
                 });
 
                 if(result.error) {
-                    alert("Giriş Hatası: Şifre hatalı veya e-posta henüz onaylanmamış!");
+                    alert("Giriş Hatası: Şifre hatalı!");
                 } else {
                     await fetchUserProfile(result.data.user);
                 }
@@ -251,7 +260,6 @@
                     return;
                 }
 
-                // Kullanıcı adının daha önce alınıp alınmadığını kontrol et
                 var checkRes = await supabase.from('profiles').select('username').eq('username', username).single();
                 if (checkRes.data) {
                     alert("Kayıt Hatası: Bu kullanıcı adı zaten başkası tarafından alınmış kanka!");
@@ -269,9 +277,13 @@
                 if(resultUp.error) {
                     alert("Kayıt Hatası: " + resultUp.error.message);
                 } else {
-                    alert("Kayıt başarılı! E-posta adresine gönderilen onay linkine tıklayarak hesabını aktifleştir.");
-                    isLoginMode = true;
-                    renderAuthCard();
+                    if (resultUp.data.session) {
+                        await fetchUserProfile(resultUp.data.user);
+                    } else {
+                        alert("Kayıt başarılı! Şimdi giriş yapabilirsin.");
+                        isLoginMode = true;
+                        renderAuthCard();
+                    }
                 }
             }
         }
@@ -279,7 +291,6 @@
         async function fetchUserProfile(user) {
             currentUser = user;
             
-            // Profiles tablosundan kullanıcının özel adını çek
             var { data, error } = await supabase.from('profiles').select('username').eq('id', user.id).single();
             if (data) {
                 currentUsername = data.username;
