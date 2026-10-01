@@ -27,7 +27,6 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         
-        /* 100dvh ile mobil tarayıcı adres çubuğu sorunu çözüldü */
         body { background-color: var(--bg-deep); color: var(--text-main); height: 100dvh; display: flex; overflow: hidden; }
 
         /* Auth Modal */
@@ -109,7 +108,6 @@
         .workspace-title h3 { font-size: 1rem; font-weight: 600; color: var(--beige-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .workspace-title p { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* min-height: 0 ile input alanının dışarı itilmesi engellendi */
         #chat-messages { flex: 1; min-height: 0; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
         
         .message-card { display: flex; gap: 12px; max-width: 85%; }
@@ -123,7 +121,7 @@
         
         .msg-bubble { background: var(--surface); border: 1px solid var(--border); padding: 12px 16px; border-radius: 14px; color: var(--text-main); font-size: 0.9rem; word-break: break-word; }
         .message-card.self .msg-bubble { background: var(--beige-primary); color: #141416; border-color: var(--beige-primary); font-weight: 500; }
-        .msg-bubble img { max-width: 260px; max-height: 200px; border-radius: 8px; margin-top: 8px; display: block; cursor: pointer; }
+        .msg-bubble img, .msg-bubble video { max-width: 280px; max-height: 220px; border-radius: 8px; margin-top: 8px; display: block; cursor: pointer; background: #000; }
 
         /* Input Dock */
         .input-dock { padding: 16px 20px; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; }
@@ -192,8 +190,9 @@
             </div>
             
             <div class="nav-section">
-                <div class="nav-label">Genel Kanal</div>
+                <div class="nav-label">Kanallar</div>
                 <div class="nav-item active" id="navGlobal" onclick="switchChat('global'); checkMobileClose();"># arıza-tespit</div>
+                <div class="nav-item" id="navEditler" onclick="switchChat('editler'); checkMobileClose();"># editler</div>
 
                 <div class="nav-label">Özel Mesajlar (DM)</div>
                 <div id="userListContainer">
@@ -230,12 +229,12 @@
 
             <div class="input-dock">
                 <div class="input-box">
-                    <label class="attach-btn" title="Resim Yükle">
+                    <label class="attach-btn" title="Medya / Video Yükle">
                         📎
-                        <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="uploadFile(this)">
+                        <input type="file" id="fileInput" accept="image/*,video/*" style="display: none;" onchange="uploadFile(this)">
                     </label>
                     <span class="uploading-indicator" id="uploadStatus">Yükleniyor...</span>
-                    <input type="text" id="msgInput" placeholder="Arıza detayını ilet..." onkeypress="if(event.key==='Enter') sendMessage()">
+                    <input type="text" id="msgInput" placeholder="Mesajını ilet veya video yükle..." onkeypress="if(event.key==='Enter') sendMessage()">
                     <button class="send-btn" onclick="sendMessage()">İlet</button>
                 </div>
             </div>
@@ -251,7 +250,7 @@
         var ADMIN_USERNAME = "utku"; 
         var currentAdminTab = 'messages';
         
-        var activeChatType = 'global';
+        var activeChatType = 'global'; // 'global', 'editler' veya özel kullanıcı adı (DM)
 
         function toggleMobileSidebar() {
             var sidebar = document.getElementById('appSidebar');
@@ -454,6 +453,7 @@
             activeChatType = type;
             
             document.getElementById('navGlobal').className = 'nav-item ' + (type === 'global' ? 'active' : '');
+            document.getElementById('navEditler').className = 'nav-item ' + (type === 'editler' ? 'active' : '');
             
             var userNavs = document.querySelectorAll('[id^="navUser_"]');
             userNavs.forEach(function(el) { el.classList.remove('active'); });
@@ -461,6 +461,9 @@
             if (type === 'global') {
                 document.getElementById('workspaceTitle').textContent = '# arıza-tespit';
                 document.getElementById('workspaceSub').textContent = 'Uçtan uca şifreli arıza bildirim kanalı';
+            } else if (type === 'editler') {
+                document.getElementById('workspaceTitle').textContent = '# editler';
+                document.getElementById('workspaceSub').textContent = 'Video ve edit paylaşımlarına özel kanal';
             } else {
                 document.getElementById('workspaceTitle').textContent = '@' + type;
                 document.getElementById('workspaceSub').textContent = type + ' ile 1\'e 1 özel mesajlaşma';
@@ -507,8 +510,8 @@
             var chatBox = document.getElementById('chat-messages');
             chatBox.innerHTML = '';
 
-            if (activeChatType === 'global') {
-                var res = await supabase.from('messages').select('*').order('created_at', { ascending: true });
+            if (activeChatType === 'global' || activeChatType === 'editler') {
+                var res = await supabase.from('messages').select('*').eq('channel', activeChatType).order('created_at', { ascending: true });
                 if (res.data) {
                     res.data.forEach(function(msg) { appendMessage(msg); });
                 }
@@ -534,8 +537,10 @@
         function subscribeRealtime() {
             supabase.channel('public:messages')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, function(payload) {
-                    if (activeChatType === 'global') {
-                        appendMessage(payload.new);
+                    var m = payload.new;
+                    var ch = m.channel || 'global';
+                    if (activeChatType === ch) {
+                        appendMessage(m);
                         var chatBox = document.getElementById('chat-messages');
                         chatBox.scrollTop = chatBox.scrollHeight;
                     }
@@ -549,7 +554,7 @@
             supabase.channel('public:direct_messages')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, function(payload) {
                     var m = payload.new;
-                    if (activeChatType !== 'global' && 
+                    if (activeChatType !== 'global' && activeChatType !== 'editler' && 
                         ((m.sender_username === currentUsername && m.receiver_username === activeChatType) ||
                          (m.sender_username === activeChatType && m.receiver_username === currentUsername))) {
                         appendMessage(m, true);
@@ -564,8 +569,8 @@
                 .subscribe();
 
             setInterval(async function() {
-                if (activeChatType === 'global') {
-                    var res = await supabase.from('messages').select('*').order('created_at', { ascending: true });
+                if (activeChatType === 'global' || activeChatType === 'editler') {
+                    var res = await supabase.from('messages').select('*').eq('channel', activeChatType).order('created_at', { ascending: true });
                     if (res.data) {
                         var chatBox = document.getElementById('chat-messages');
                         if (res.data.length !== chatBox.children.length) loadMessages();
@@ -574,18 +579,26 @@
             }, 3000);
         }
 
-        async function sendMessage(mediaUrl) {
+        async function sendMessage(mediaUrl, isVideo) {
             var input = document.getElementById('msgInput');
             var text = input.value.trim();
             if (!text && !mediaUrl) return;
 
-            if (activeChatType === 'global') {
-                var res = await supabase.from('messages').insert([{
+            if (activeChatType === 'global' || activeChatType === 'editler') {
+                var payloadData = {
                     user_email: currentUsername,
                     avatar_url: currentUserAvatar || null,
                     content: text,
-                    image_url: mediaUrl || null
-                }]).select();
+                    channel: activeChatType
+                };
+
+                if (isVideo) {
+                    payloadData.video_url = mediaUrl;
+                } else {
+                    payloadData.image_url = mediaUrl || null;
+                }
+
+                var res = await supabase.from('messages').insert([payloadData]).select();
 
                 if (res.error) {
                     alert("Mesaj gönderilemedi! Hata: " + res.error.message);
@@ -627,7 +640,8 @@
             indicator.style.display = 'inline';
 
             var fileExt = file.name.split('.').pop();
-            var fileName = 'media_' + Date.now() + '_' + Math.floor(Math.random() * 10000) + '.' + fileExt;
+            var isVideo = file.type.startsWith('video/');
+            var fileName = (isVideo ? 'video_' : 'media_') + Date.now() + '_' + Math.floor(Math.random() * 10000) + '.' + fileExt;
             
             var uploadRes = await supabase.storage.from('chat-images').upload(fileName, file);
             indicator.style.display = 'none';
@@ -639,7 +653,7 @@
 
             var urlRes = supabase.storage.from('chat-images').getPublicUrl(fileName);
             if (urlRes && urlRes.data) {
-                sendMessage(urlRes.data.publicUrl);
+                sendMessage(urlRes.data.publicUrl, isVideo);
             }
             inputElement.value = '';
         }
@@ -678,6 +692,9 @@
             }
             if (msg.image_url) {
                 html += '<img src="' + msg.image_url + '" alt="Medya" onclick="window.open(this.src)">';
+            }
+            if (msg.video_url) {
+                html += '<video controls src="' + msg.video_url + '"></video>';
             }
             
             html += '</div></div>';
@@ -728,8 +745,8 @@
             var html = '';
             allMsgs.forEach(function(msg) {
                 var isDMTable = msg.sender_username !== undefined;
-                var author = isDMTable ? (msg.sender_username + ' ➔ ' + msg.receiver_username + ' (Özel)') : (msg.user_email + ' (Genel)');
-                var snippet = msg.content ? msg.content.substring(0, 40) : '[Medya]';
+                var author = isDMTable ? (msg.sender_username + ' ➔ ' + msg.receiver_username + ' (Özel)') : (msg.user_email + ' (' + (msg.channel || 'global') + ')');
+                var snippet = msg.content ? msg.content.substring(0, 40) : '[Medya/Video]';
                 
                 html += '<div class="admin-item" data-id="' + msg.id + '">';
                 html += '<div class="admin-item-info">';
