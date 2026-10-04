@@ -134,6 +134,25 @@
         .send-btn:active { opacity: 0.85; }
         .uploading-indicator { font-size: 0.75rem; color: var(--beige-primary); display: none; font-family: 'JetBrains Mono', monospace; }
 
+        /* Sesli Oda Arayüz Stilleri */
+        .voice-room-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 480px; margin: auto; background: var(--surface); border: 1px solid var(--border); padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); gap: 20px; }
+        .voice-room-title { text-align: center; color: var(--beige-light); }
+        .voice-room-title h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
+        .voice-room-title p { font-size: 0.8rem; color: var(--text-muted); }
+        .voice-controls { display: flex; gap: 10px; width: 100%; justify-content: center; }
+        .voice-controls button { flex: 1; padding: 12px 10px; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; }
+        .btn-voice-join { background: var(--beige-primary); color: #141416; }
+        .btn-voice-join:hover { opacity: 0.9; }
+        .btn-voice-leave { background: rgba(239, 68, 68, 0.2); color: var(--danger-btn); border: 1px solid rgba(239, 68, 68, 0.4); }
+        .btn-voice-mic { background: rgba(217, 119, 6, 0.2); color: var(--danger); border: 1px solid rgba(217, 119, 6, 0.4); }
+        .voice-controls button:disabled { background: var(--gray-subtle); color: var(--text-muted); cursor: not-allowed; opacity: 0.5; border-color: var(--border); }
+        .voice-status { width: 100%; text-align: center; background: var(--gray-subtle); padding: 12px; border-radius: 10px; font-size: 0.85rem; color: var(--text-muted); border: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; }
+        .voice-participants-box { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+        .voice-participants-box h4 { font-size: 0.85rem; color: var(--beige-light); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+        #voiceUserList { list-style: none; padding: 0; margin: 0; max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+        #voiceUserList li { padding: 10px 14px; background: var(--gray-subtle); border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); color: var(--beige-light); }
+        .voice-empty { color: var(--text-muted); text-align: center; font-style: italic; background: transparent !important; border: none !important; }
+
         /* Mobil Arka Plan Karartma Overlay */
         .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99; backdrop-filter: blur(2px); }
 
@@ -156,19 +175,6 @@
                 <h1>Bağlantı Kuruluyor...</h1>
                 <p>Sunucu yapılandırması alınıyor</p>
             </div>
-        </div>
-    </div>
-
-    <!-- Kazan Dairesi Şifre Giriş Modalı -->
-    <div id="kazanAuthModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 3500; padding: 20px;">
-        <div style="width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 30px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.9);">
-            <h2 style="color: var(--beige-light); margin-bottom: 8px; font-size: 1.2rem;">🔥 Kazan Dairesi</h2>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Bu odaya giriş yapmak için Render şifresi gerekiyor.</p>
-            <div class="input-group" style="margin-bottom: 15px;">
-                <input type="password" id="kazanPasswordInput" placeholder="Şifre" style="text-align: center;" onkeypress="if(event.key==='Enter') verifyKazanPassword()">
-            </div>
-            <button class="btn-primary" onclick="verifyKazanPassword()">Giriş Yap</button>
-            <button class="auth-switch-btn" onclick="closeKazanAuthModal()" style="margin-top: 10px;">İptal</button>
         </div>
     </div>
 
@@ -208,7 +214,7 @@
                 <div class="nav-label">Kanallar</div>
                 <div class="nav-item active" id="navGlobal" onclick="switchChat('global'); checkMobileClose();"># arıza-tespit</div>
                 <div class="nav-item" id="navEditler" onclick="switchChat('editler'); checkMobileClose();"># editler</div>
-                <div class="nav-item" id="navKazan" onclick="tryOpenKazanDairesi(); checkMobileClose();">🔥 # kazan-dairesi</div>
+                <div class="nav-item" id="navVoice" onclick="switchChat('voice'); checkMobileClose();">🔊 dut-agacı</div>
 
                 <div class="nav-label">Özel Mesajlar (DM)</div>
                 <div id="userListContainer">
@@ -243,7 +249,7 @@
 
             <div id="chat-messages"></div>
 
-            <div class="input-dock">
+            <div class="input-dock" id="inputDockArea">
                 <div class="input-box">
                     <label class="attach-btn" title="Medya / Video Yükle">
                         📎
@@ -266,43 +272,12 @@
         var ADMIN_USERNAME = "utku"; 
         var currentAdminTab = 'messages';
         
-        var activeChatType = 'global'; // 'global', 'editler', 'kazan-dairesi' veya özel kullanıcı adı (DM)
-        var isKazanUnlocked = false;
+        var activeChatType = 'global'; // 'global', 'editler', 'voice' veya özel kullanıcı adı (DM)
 
-        function tryOpenKazanDairesi() {
-            if (isKazanUnlocked) {
-                switchChat('kazan-dairesi');
-            } else {
-                document.getElementById('kazanAuthModal').style.display = 'flex';
-                document.getElementById('kazanPasswordInput').value = '';
-                document.getElementById('kazanPasswordInput').focus();
-            }
-        }
-
-        function closeKazanAuthModal() {
-            document.getElementById('kazanAuthModal').style.display = 'none';
-        }
-
-        async function verifyKazanPassword() {
-            var password = document.getElementById('kazanPasswordInput').value;
-            try {
-                var res = await fetch('/api/login/kazan-dairesi', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password })
-                });
-                var data = await res.json();
-                if (data.success) {
-                    isKazanUnlocked = true;
-                    closeKazanAuthModal();
-                    switchChat('kazan-dairesi');
-                } else {
-                    alert("Hatalı şifre kanka!");
-                }
-            } catch (err) {
-                alert("Bağlantı hatası!");
-            }
-        }
+        // Sesli Oda Değişkenleri
+        let localStream = null;
+        let isMicMuted = false;
+        let audioContext = null;
 
         function toggleMobileSidebar() {
             var sidebar = document.getElementById('appSidebar');
@@ -506,24 +481,29 @@
             
             document.getElementById('navGlobal').className = 'nav-item ' + (type === 'global' ? 'active' : '');
             document.getElementById('navEditler').className = 'nav-item ' + (type === 'editler' ? 'active' : '');
-            var kazanEl = document.getElementById('navKazan');
-            if (kazanEl) kazanEl.className = 'nav-item ' + (type === 'kazan-dairesi' ? 'active' : '');
+            document.getElementById('navVoice').className = 'nav-item ' + (type === 'voice' ? 'active' : '');
             
             var userNavs = document.querySelectorAll('[id^="navUser_"]');
             userNavs.forEach(function(el) { el.classList.remove('active'); });
 
+            var inputDock = document.getElementById('inputDockArea');
+
             if (type === 'global') {
                 document.getElementById('workspaceTitle').textContent = '# arıza-tespit';
                 document.getElementById('workspaceSub').textContent = 'Uçtan uca şifreli arıza bildirim kanalı';
+                if(inputDock) inputDock.style.display = 'block';
             } else if (type === 'editler') {
                 document.getElementById('workspaceTitle').textContent = '# editler';
                 document.getElementById('workspaceSub').textContent = 'Video ve edit paylaşımlarına özel kanal';
-            } else if (type === 'kazan-dairesi') {
-                document.getElementById('workspaceTitle').textContent = '# kazan-dairesi';
-                document.getElementById('workspaceSub').textContent = 'Render şifresiyle korunan gizli kazan dairesi kanalı';
+                if(inputDock) inputDock.style.display = 'block';
+            } else if (type === 'voice') {
+                document.getElementById('workspaceTitle').textContent = '🔊 sesli-oda';
+                document.getElementById('workspaceSub').textContent = 'Canlı sesli arıza konferans odası';
+                if(inputDock) inputDock.style.display = 'none';
             } else {
                 document.getElementById('workspaceTitle').textContent = '@' + type;
                 document.getElementById('workspaceSub').textContent = type + ' ile 1\'e 1 özel mesajlaşma';
+                if(inputDock) inputDock.style.display = 'block';
                 var selectedUserNav = document.getElementById('navUser_' + type);
                 if (selectedUserNav) selectedUserNav.classList.add('active');
             }
@@ -567,7 +547,31 @@
             var chatBox = document.getElementById('chat-messages');
             chatBox.innerHTML = '';
 
-            if (activeChatType === 'global' || activeChatType === 'editler' || activeChatType === 'kazan-dairesi') {
+            if (activeChatType === 'voice') {
+                chatBox.innerHTML = `
+                    <div class="voice-room-container">
+                        <div class="voice-room-title">
+                            <h3>🔊 Canlı Sesli Arıza Konferansı</h3>
+                            <p>Saha ekipleriyle kesintisiz sesli iletişim</p>
+                        </div>
+                        <div class="voice-controls">
+                            <button id="joinVoiceBtn" class="btn-voice-join" onclick="joinVoiceRoom()">Odaya Gir</button>
+                            <button id="leaveVoiceBtn" class="btn-voice-leave" onclick="leaveVoiceRoom()" disabled>Odadan Çık</button>
+                            <button id="micVoiceBtn" class="btn-voice-mic" onclick="toggleVoiceMic()" disabled>Mikrofonu Kapat</button>
+                        </div>
+                        <div id="voiceStatus" class="voice-status">Durum: Sesli odada değilsin</div>
+                        <div class="voice-participants-box">
+                            <h4>Bağlı Katılımcılar (<span id="voiceUserCount">0</span>)</h4>
+                            <ul id="voiceUserList">
+                                <li class="voice-empty">Odada kimse yok.</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            if (activeChatType === 'global' || activeChatType === 'editler') {
                 var res = await supabase.from('messages').select('*').eq('channel', activeChatType).order('created_at', { ascending: true });
                 if (res.data) {
                     res.data.forEach(function(msg) { appendMessage(msg); });
@@ -591,6 +595,129 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
+        // Sesli Oda İşlevleri
+        async function joinVoiceRoom() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+                
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+
+                if ('mediaSession' in navigator) {
+                    navigator.mediaSession.metadata = new MediaMetadata({
+                        title: 'TEİAŞ Sesli Arıza Odası',
+                        artist: currentUsername,
+                        album: 'Canlı Konferans',
+                    });
+                    navigator.mediaSession.playbackState = 'playing';
+                }
+
+                document.getElementById('voiceStatus').innerText = "Durum: Sesli odadasın (Bağlı 🎙️)";
+                document.getElementById('voiceStatus').style.color = "var(--success)";
+                document.getElementById('joinVoiceBtn').disabled = true;
+                document.getElementById('leaveVoiceBtn').disabled = false;
+                document.getElementById('micVoiceBtn').disabled = false;
+                
+                addVoiceUserToList(currentUsername);
+            } catch (error) {
+                console.error("Mikrofon hatası:", error);
+                alert("Odaya girebilmek için tarayıcıdan mikrofon izni vermen gerekiyor kanka!");
+            }
+        }
+
+        function leaveVoiceRoom() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = 'none';
+            }
+
+            document.getElementById('voiceStatus').innerText = "Durum: Odadan ayrıldın";
+            document.getElementById('voiceStatus').style.color = "var(--text-muted)";
+            document.getElementById('joinVoiceBtn').disabled = false;
+            
+            isMicMuted = false;
+            const micBtn = document.getElementById('micVoiceBtn');
+            micBtn.innerText = "Mikrofonu Kapat";
+            micBtn.style.background = "rgba(217, 119, 6, 0.2)";
+            micBtn.style.color = "var(--danger)";
+            
+            document.getElementById('leaveVoiceBtn').disabled = true;
+            micBtn.disabled = true;
+
+            removeVoiceUserFromList(currentUsername);
+        }
+
+        function toggleVoiceMic() {
+            if (localStream) {
+                const audioTrack = localStream.getAudioTracks()[0];
+                isMicMuted = !isMicMuted;
+                audioTrack.enabled = !isMicMuted;
+                
+                const micBtn = document.getElementById('micVoiceBtn');
+                if (isMicMuted) {
+                    micBtn.innerText = "Mikrofonu Aç";
+                    micBtn.style.background = "rgba(239, 68, 68, 0.2)";
+                    micBtn.style.color = "var(--danger-btn)";
+                } else {
+                    micBtn.innerText = "Mikrofonu Kapat";
+                    micBtn.style.background = "rgba(217, 119, 6, 0.2)";
+                    micBtn.style.color = "var(--danger)";
+                }
+            }
+        }
+
+        function addVoiceUserToList(username) {
+            const userList = document.getElementById('voiceUserList');
+            if (!userList) return;
+            if (userList.querySelector('.voice-empty')) {
+                userList.innerHTML = '';
+            }
+            
+            if (!document.getElementById(`voiceUser-${username}`)) {
+                const li = document.createElement('li');
+                li.id = `voiceUser-${username}`;
+                li.innerHTML = `🟢 ${username} (Konuşmacı)`;
+                userList.appendChild(li);
+                updateVoiceUserCount();
+            }
+        }
+
+        function removeVoiceUserFromList(username) {
+            const userItem = document.getElementById(`voiceUser-${username}`);
+            if (userItem) userItem.remove();
+            
+            const userList = document.getElementById('voiceUserList');
+            if (userList && userList.children.length === 0) {
+                userList.innerHTML = `<li class="voice-empty">Odada kimse yok.</li>`;
+            }
+            updateVoiceUserCount();
+        }
+
+        function updateVoiceUserCount() {
+            const userList = document.getElementById('voiceUserList');
+            if (!userList) return;
+            const count = userList.querySelectorAll('.voice-empty').length > 0 ? 0 : userList.children.length;
+            const countEl = document.getElementById('voiceUserCount');
+            if (countEl) countEl.innerText = count;
+        }
+
         function subscribeRealtime() {
             supabase.channel('public:messages')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, function(payload) {
@@ -611,7 +738,7 @@
             supabase.channel('public:direct_messages')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, function(payload) {
                     var m = payload.new;
-                    if (activeChatType !== 'global' && activeChatType !== 'editler' && activeChatType !== 'kazan-dairesi' && 
+                    if (activeChatType !== 'global' && activeChatType !== 'editler' && activeChatType !== 'voice' && 
                         ((m.sender_username === currentUsername && m.receiver_username === activeChatType) ||
                          (m.sender_username === activeChatType && m.receiver_username === currentUsername))) {
                         appendMessage(m, true);
@@ -626,11 +753,11 @@
                 .subscribe();
 
             setInterval(async function() {
-                if (activeChatType === 'global' || activeChatType === 'editler' || activeChatType === 'kazan-dairesi') {
+                if (activeChatType === 'global' || activeChatType === 'editler') {
                     var res = await supabase.from('messages').select('*').eq('channel', activeChatType).order('created_at', { ascending: true });
                     if (res.data) {
                         var chatBox = document.getElementById('chat-messages');
-                        if (res.data.length !== chatBox.children.length) loadMessages();
+                        if (res.data.length !== chatBox.children.length && activeChatType !== 'voice') loadMessages();
                     }
                 }
             }, 3000);
@@ -641,7 +768,7 @@
             var text = input.value.trim();
             if (!text && !mediaUrl) return;
 
-            if (activeChatType === 'global' || activeChatType === 'editler' || activeChatType === 'kazan-dairesi') {
+            if (activeChatType === 'global' || activeChatType === 'editler') {
                 var payloadData = {
                     user_email: currentUsername,
                     avatar_url: currentUserAvatar || null,
@@ -715,6 +842,36 @@
             inputElement.value = '';
         }
 
+        // Akıllı Tarih / Saat Formatlayıcı
+        function formatMessageTime(dateString) {
+            if (!dateString) return '';
+            var date = new Date(dateString);
+            var now = new Date();
+            var diffMs = now - date;
+            var diffHours = diffMs / (1000 * 60 * 60);
+            var diffDays = diffHours / 24;
+
+            if (diffHours < 24 && date.getDate() === now.getDate()) {
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } else if (diffDays < 7) {
+                var days = Math.floor(diffDays);
+                if (days <= 1) {
+                    return "1 gün önce";
+                } else {
+                    return days + " gün önce";
+                }
+            } else if (diffDays < 30) {
+                var weeks = Math.floor(diffDays / 7);
+                if (weeks <= 1) {
+                    return "1 hafta önce";
+                } else {
+                    return weeks + " hafta önce";
+                }
+            } else {
+                return date.toLocaleDateString('tr-TR');
+            }
+        }
+
         function appendMessage(msg, isDM) {
             if (!msg.id) return;
             var existing = document.querySelector('[data-msg-id="' + msg.id + '"]');
@@ -728,8 +885,7 @@
             card.className = 'message-card ' + (isSelf ? 'self' : '');
             card.setAttribute('data-msg-id', msg.id);
             
-            var dateObj = msg.created_at ? new Date(msg.created_at) : new Date();
-            var timeStr = dateObj.toLocaleTimeString();
+            var timeStr = formatMessageTime(msg.created_at);
             
             var html = '';
             html += '<div class="msg-avatar">';
