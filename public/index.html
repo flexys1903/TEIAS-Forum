@@ -352,7 +352,7 @@
             }
         }
 
-        // --- Gelişmiş Sesli Sohbet (WebRTC + Presence + Yankı Engelleme) ---
+        // --- Kararlı WebRTC Sesli Sohbet (Çoklu STUN + ICE Yeniden Başlatma) ---
         async function toggleVoiceRoom(roomName) {
             if (activeVoiceRoom === roomName) {
                 return;
@@ -363,12 +363,13 @@
             }
 
             try {
-                // Yankı engelleme (echoCancellation) aktif mikrofon erişimi
                 localAudioStream = await navigator.mediaDevices.getUserMedia({ 
                     audio: { 
                         echoCancellation: true, 
                         noiseSuppression: true, 
-                        autoGainControl: true 
+                        autoGainControl: true,
+                        channelCount: 1,
+                        sampleRate: 48000
                     }, 
                     video: false 
                 });
@@ -382,7 +383,6 @@
                 if(roomName === 'dut-agaci') document.getElementById('navVoiceDut').classList.add('voice-active');
                 if(roomName === 'hat-bakim') document.getElementById('navVoiceHat').classList.add('voice-active');
 
-                // Supabase Broadcast ve Presence Entegrasyonu
                 voiceChannelRealtime = supabase.channel('voice_room_' + roomName, {
                     config: { 
                         broadcast: { self: false },
@@ -453,7 +453,11 @@
             }
 
             var pc = new RTCPeerConnection({
-                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun.cloudflare.com:3478' }
+                ]
             });
 
             if (localAudioStream) {
@@ -467,6 +471,16 @@
                         event: 'audio_signal',
                         payload: { type: 'candidate', sender: currentUsername, target: peerUsername, candidate: event.candidate }
                     });
+                }
+            };
+
+            // Bağlantı kopmalarına karşı otomatik kurtarma / ICE Restart
+            pc.oniceconnectionstatechange = function() {
+                if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+                    console.warn("ICE bağlantısı zayıfladı/koptu, yeniden deneniyor...");
+                    try {
+                        pc.restartIce();
+                    } catch (e) {}
                 }
             };
 
@@ -494,12 +508,12 @@
             if (!dutEl || !hatEl) return;
 
             dutEl.innerHTML = '🔊 dut agacı';
-            hatEl.innerHTML = '🎙️ hat bakım';
+            hatEl.innerHTML = '🎙️️ hat bakım';
 
             if (roomName === 'dut-agaci' && users.length > 0) {
                 dutEl.innerHTML = '🔊 dut agacı <span style="font-size:0.65rem; opacity:0.8; display:block; padding-left:18px; color:var(--success);">👤 ' + users.join(', ') + '</span>';
             } else if (roomName === 'hat-bakim' && users.length > 0) {
-                hatEl.innerHTML = '🎙️ hat bakım <span style="font-size:0.65rem; opacity:0.8; display:block; padding-left:18px; color:var(--success);">👤 ' + users.join(', ') + '</span>';
+                hatEl.innerHTML = '🎙️️ hat bakım <span style="font-size:0.65rem; opacity:0.8; display:block; padding-left:18px; color:var(--success);">👤 ' + users.join(', ') + '</span>';
             }
         }
 
