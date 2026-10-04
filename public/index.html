@@ -352,7 +352,7 @@
             }
         }
 
-        // --- Ham & Doğal WebRTC Ses Ayarları (Cızırtı ve Robotikliği Önleyen Mod) ---
+        // --- Kararlı WebRTC Ses & Bağlantı Ayarları (Kesilmeleri Önleyen Mod) ---
         async function toggleVoiceRoom(roomName) {
             if (activeVoiceRoom === roomName) {
                 return;
@@ -363,12 +363,12 @@
             }
 
             try {
-                // Gürültü engelleme ve zorlanmış örnekleme hızı kaldırıldı, ses ham ve berrak bırakıldı
                 localAudioStream = await navigator.mediaDevices.getUserMedia({ 
                     audio: { 
                         echoCancellation: true, 
                         noiseSuppression: false, 
-                        autoGainControl: true
+                        autoGainControl: true,
+                        channelCount: 1
                     }, 
                     video: false 
                 });
@@ -451,12 +451,16 @@
                 return peerConnections[peerUsername];
             }
 
+            // Genişletilmiş STUN sunucu havuzu ile bağlantı kopmalarını en aza indirdik
             var pc = new RTCPeerConnection({
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun.stunprotocol.org:3478' },
                     { urls: 'stun:stun.cloudflare.com:3478' }
-                ]
+                ],
+                iceCandidatePoolSize: 10
             });
 
             if (localAudioStream) {
