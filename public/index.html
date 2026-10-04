@@ -292,7 +292,7 @@
         var ADMIN_USERNAME = "utku"; 
         var currentAdminTab = 'messages';
         
-        var activeChatType = 'global'; // 'global', 'editler', 'kazan-dairesi' veya özel kullanıcı adı (DM)
+        var activeChatType = 'global'; 
         var isKazanUnlocked = false;
 
         // Sesli Sohbet Değişkenleri
@@ -352,10 +352,9 @@
             }
         }
 
-        // --- Sesli Sohbet (Voice Room) Fonksiyonları ---
+        // --- Gelişmiş Sesli Sohbet (WebRTC + Presence + Yankı Engelleme) ---
         async function toggleVoiceRoom(roomName) {
             if (activeVoiceRoom === roomName) {
-                // Zaten bu odadaysak odayı bırakmak yerine sadece ses durumunu koruyoruz, çıkmak için kırmızı buton var.
                 return;
             }
 
@@ -364,7 +363,15 @@
             }
 
             try {
-                localAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                // Yankı engelleme (echoCancellation) aktif mikrofon erişimi
+                localAudioStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { 
+                        echoCancellation: true, 
+                        noiseSuppression: true, 
+                        autoGainControl: true 
+                    }, 
+                    video: false 
+                });
                 activeVoiceRoom = roomName;
 
                 document.getElementById('voiceStatusBar').style.display = 'flex';
@@ -375,9 +382,18 @@
                 if(roomName === 'dut-agaci') document.getElementById('navVoiceDut').classList.add('voice-active');
                 if(roomName === 'hat-bakim') document.getElementById('navVoiceHat').classList.add('voice-active');
 
-                // Supabase Broadcast ile WebRTC sinyalleşmesi
+                // Supabase Broadcast ve Presence Entegrasyonu
                 voiceChannelRealtime = supabase.channel('voice_room_' + roomName, {
-                    config: { broadcast: { self: false } }
+                    config: { 
+                        broadcast: { self: false },
+                        presence: { key: currentUsername }
+                    }
+                });
+
+                voiceChannelRealtime.on('presence', { event: 'sync' }, () => {
+                    var state = voiceChannelRealtime.presenceState();
+                    var users = Object.keys(state);
+                    updateVoiceParticipantsUI(roomName, users);
                 });
 
                 voiceChannelRealtime.on('broadcast', { event: 'audio_signal' }, async function(payload) {
@@ -385,7 +401,6 @@
                     if (data.sender === currentUsername) return;
 
                     if (data.type === 'join') {
-                        // Yeni katılan kullanıcıya offer gönder
                         var pc = createPeerConnection(data.sender);
                         var offer = await pc.createOffer();
                         await pc.setLocalDescription(offer);
@@ -415,8 +430,9 @@
                             await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
                         }
                     }
-                }).subscribe(function(status) {
+                }).subscribe(async function(status) {
                     if (status === 'SUBSCRIBED') {
+                        await voiceChannelRealtime.track({ online_at: new Date().toISOString() });
                         voiceChannelRealtime.send({
                             type: 'broadcast',
                             event: 'audio_signal',
@@ -445,7 +461,7 @@
             }
 
             pc.onicecandidate = function(event) {
-                if (event.candidate) {
+                if (event.candidate && voiceChannelRealtime) {
                     voiceChannelRealtime.send({
                         type: 'broadcast',
                         event: 'audio_signal',
@@ -455,6 +471,11 @@
             };
 
             pc.ontrack = function(event) {
+                var existingAudio = document.querySelector('audio[data-peer="' + peerUsername + '"]');
+                if (existingAudio) {
+                    existingAudio.srcObject = event.streams[0];
+                    return;
+                }
                 var remoteAudio = document.createElement('audio');
                 remoteAudio.srcObject = event.streams[0];
                 remoteAudio.autoplay = true;
@@ -465,6 +486,21 @@
 
             peerConnections[peerUsername] = pc;
             return pc;
+        }
+
+        function updateVoiceParticipantsUI(roomName, users) {
+            var dutEl = document.getElementById('navVoiceDut');
+            var hatEl = document.getElementById('navVoiceHat');
+            if (!dutEl || !hatEl) return;
+
+            dutEl.innerHTML = '🔊 dut agacı';
+            hatEl.innerHTML = '🎙️ hat bakım';
+
+            if (roomName === 'dut-agaci' && users.length > 0) {
+                dutEl.innerHTML = '🔊 dut agacı <span style="font-size:0.65rem; opacity:0.8; display:block; padding-left:18px; color:var(--success);">👤 ' + users.join(', ') + '</span>';
+            } else if (roomName === 'hat-bakim' && users.length > 0) {
+                hatEl.innerHTML = '🎙️ hat bakım <span style="font-size:0.65rem; opacity:0.8; display:block; padding-left:18px; color:var(--success);">👤 ' + users.join(', ') + '</span>';
+            }
         }
 
         function toggleMuteVoice() {
@@ -490,6 +526,8 @@
                 peerConnections[user].close();
                 delete peerConnections[user];
             });
+            peerConnections = {};
+
             if (voiceChannelRealtime) {
                 supabase.removeChannel(voiceChannelRealtime);
                 voiceChannelRealtime = null;
@@ -498,10 +536,16 @@
             document.getElementById('voiceStatusBar').style.display = 'none';
             document.getElementById('navVoiceDut').classList.remove('voice-active');
             document.getElementById('navVoiceHat').classList.remove('voice-active');
+            document.getElementById('navVoiceDut').innerHTML = '🔊 dut agacı';
+            document.getElementById('navVoiceHat').innerHTML = '🎙️ hat bakım';
+            
             activeVoiceRoom = null;
             isMuted = false;
-            document.getElementById('muteBtn').classList.remove('active-mute');
-            document.getElementById('muteBtn').textContent = '🎤';
+            var muteBtn = document.getElementById('muteBtn');
+            if(muteBtn) {
+                muteBtn.classList.remove('active-mute');
+                muteBtn.textContent = '🎤';
+            }
         }
 
         async function init() {
